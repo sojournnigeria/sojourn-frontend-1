@@ -400,7 +400,7 @@ export const TitleAndPropertyDescription: FC<{
           next();
         }
       }}
-      className="w-full relative h-full overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
+className="w-full relative min-h-screen overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
     >
       <div className="w-5/6 min-h-[100px] md:w-4/6 lg:w-1/2 about-one">
         <h3 className="text-xl md:text-3xl mb-10">Basic Property Details.</h3>
@@ -1408,28 +1408,15 @@ export const PropertyLocation: FC<{
   setFormValidation((prev) => ({ ...prev, zip: false }));
 };
 
-  // const handleAreaChange = (e: ChangeEvent<HTMLInputElement>) => {
-  //   const area = e.target.value;
-  //   setLocalArea(area);
-  //   setForm((prev) => ({
-  //     ...prev,
-  //     zip: localLga ? (area ? `${localLga}, ${area}` : localLga) : area,
-  //   }));
-  //   setFormValidation((prev) => ({ ...prev, zip: false }));
-  // };
-
   const handleAreaChange = (e: ChangeEvent<HTMLInputElement>) => {
-  const area = e.target.value;
-
-  setLocalArea(area);
-
-  setForm((prev) => ({
-    ...prev,
-    zip: localLga ? (area ? `${localLga}, ${area}` : localLga) : area,
-  }));
-
-  setFormValidation((prev) => ({ ...prev, zip: false }));
-};
+    const area = e.target.value;
+    setLocalArea(area);
+    setForm((prev) => ({
+      ...prev,
+      zip: localLga ? (area ? `${localLga}, ${area}` : localLga) : area,
+    }));
+    setFormValidation((prev) => ({ ...prev, zip: false }));
+  };
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -1478,7 +1465,7 @@ export const PropertyLocation: FC<{
           next();
         }
       }}
-      className="w-full relative h-full overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
+className="w-full relative min-h-screen overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
     >
       <div className="w-5/6 flex flex-col items-center min-h-[100px] md:w-5/6 about-one max-w-[1400px] mx-auto pb-24">
         <div className="w-full md:w-4/6 lg:w-1/2 flex flex-col items-center">
@@ -1666,7 +1653,7 @@ export const ContactInformation: FC<{
           next();
         }
       }}
-      className="w-full relative h-full overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
+className="w-full relative min-h-screen overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
     >
       <div className="w-full flex flex-col items-center min-h-[100px] md:w-5/6 about-one max-w-[1400px] mx-auto">
         <div className="w-5/6 md:w-1/2 flex flex-col items-center">
@@ -1856,7 +1843,7 @@ export const InpsectionDateAndComments: FC<{
         }
         onSubmit();
       }}
-      className="w-full relative h-full overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
+className="w-full relative min-h-screen overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
     >
       <div className="fixed w-full bottom-[60px] left-0 right-0 z-40 flex flex-col items-center justify-center gap-2 px-4 py-2 bg-white/95 backdrop-blur-sm border-t border-gray-100">
         {error ? (
@@ -2076,7 +2063,7 @@ export const WhatIsNear: FC<{
           next();
         }
       }}
-      className="w-full relative h-full overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
+className="w-full relative min-h-screen overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
     >
       <div className="w-full flex flex-col items-center min-h-[100px] md:w-5/6 about-one max-w-[1400px] mx-auto">
         <h3 className="text-xl mb-5 text-center mb-2 md:text-3xl ">
@@ -2283,7 +2270,7 @@ export const Ammenities: FC<{
           next();
         }
       }}
-      className="w-full relative h-full overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
+className="w-full relative min-h-screen overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
     >
       <div className="w-full flex flex-col items-center min-h-[100px] md:w-5/6 about-one max-w-[1400px] mx-auto">
         <h3 className="text-xl mb-5 text-center mb-2 md:text-3xl ">
