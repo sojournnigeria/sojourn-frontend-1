@@ -19,18 +19,20 @@ export default function SlideNotification({ url }: { url: string }) {
   if (!show) return null;
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] animate-slide-down">
-      <div className="bg-white shadow-xl border border-gray-200 rounded-xl px-6 py-3 flex items-center gap-3">
-        <span className="text-sm text-gray-700">
-          Please complete your profile.
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] w-[92%] max-w-lg animate-slide-down">
+      <div className="bg-white shadow-2xl border border-gray-200 rounded-2xl px-6 py-4 sm:px-8 sm:py-5 flex items-center justify-between gap-4">
+        
+        <span className="text-base sm:text-lg text-gray-800 font-medium">
+          Please complete your profile to unlock all features.
         </span>
 
         <Link
           href={url}
-          className="text-primary font-semibold text-sm hover:underline"
+          className="shrink-0 bg-primary text-white font-semibold text-sm sm:text-base px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
         >
           Go to Profile
         </Link>
+
       </div>
     </div>
   );
