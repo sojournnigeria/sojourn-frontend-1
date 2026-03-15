@@ -79,7 +79,8 @@ export default function NotificationBell({ userId, role }: NotificationBellProps
   const hasNotifications = unreadCount > 0 || notifications.length > 0;
   const displayNotifications = notifications.slice(0, 8);
 
-  const viewAllLink = role === "host" ? "/hosts/dashboard/inbox" : "/dashboard/inbox";
+  const viewAllLink =
+    role === "host" ? "/hosts/dashboard/inbox" : "/dashboard/inbox";
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -109,7 +110,16 @@ export default function NotificationBell({ userId, role }: NotificationBellProps
 
       {/* Dropdown Panel */}
       {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] w-80 bg-white rounded-xl shadow-2xl border border-gray-100 z-[99999] overflow-hidden notification-dropdown-enter">
+        <div
+          className="
+          absolute top-[calc(100%+8px)]
+          left-1/2 -translate-x-1/2
+          w-[92vw] max-w-sm
+          sm:left-auto sm:translate-x-0 sm:right-0 sm:w-80
+          bg-white rounded-xl shadow-2xl border border-gray-100
+          z-[99999] overflow-hidden notification-dropdown-enter
+        "
+        >
           {/* Header */}
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-900">
@@ -128,6 +138,7 @@ export default function NotificationBell({ userId, role }: NotificationBellProps
               displayNotifications.map((notification) => {
                 const Icon = NOTIFICATION_ICONS[notification.type];
                 const iconColor = ICON_COLORS[notification.type];
+
                 return (
                   <Link
                     key={notification.id}
@@ -138,6 +149,7 @@ export default function NotificationBell({ userId, role }: NotificationBellProps
                     <div className="shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
                       <Icon className={`w-5 h-5 ${iconColor}`} />
                     </div>
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm font-semibold text-gray-900 truncate">
@@ -147,9 +159,11 @@ export default function NotificationBell({ userId, role }: NotificationBellProps
                           {formatNotificationDate(notification.createdAt)}
                         </span>
                       </div>
+
                       <p className="text-xs text-gray-500 truncate mt-0.5">
                         {notification.message}
                       </p>
+
                       {!notification.read && (
                         <span className="inline-flex mt-1 px-1.5 py-0.5 rounded-full bg-red-50 text-[10px] font-semibold text-red-600">
                           New
@@ -164,9 +178,11 @@ export default function NotificationBell({ userId, role }: NotificationBellProps
                 <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
                   <Inbox className="w-6 h-6 text-gray-400" />
                 </div>
+
                 <p className="text-sm font-medium text-gray-500">
                   No new notifications
                 </p>
+
                 <p className="text-xs text-gray-400 mt-1">
                   You&apos;re all caught up
                 </p>
