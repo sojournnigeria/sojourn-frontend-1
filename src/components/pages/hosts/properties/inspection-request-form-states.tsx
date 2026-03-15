@@ -1359,36 +1359,77 @@ export const PropertyLocation: FC<{
     }
   }, [form.country, setForm]);
 
-  const handleStateChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const state = e.target.value;
-    setForm((prev) => ({
-      ...prev,
-      city: state ? stateToCityValue(state) : "",
-    }));
-    setFormValidation((prev) => ({ ...prev, city: false }));
-    setLocalLga("");
-    setLocalArea("");
-  };
+  // const handleStateChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  //   const state = e.target.value;
+  //   setForm((prev) => ({
+  //     ...prev,
+  //     city: state ? stateToCityValue(state) : "",
+  //   }));
+  //   setFormValidation((prev) => ({ ...prev, city: false }));
+  //   setLocalLga("");
+  //   setLocalArea("");
+  // };
+
+ const handleStateChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  const state = e.target.value;
+
+  setForm((prev) => ({
+    ...prev,
+    city: state ? stateToCityValue(state) : "",
+    zip: "",
+  }));
+
+  setFormValidation((prev) => ({ ...prev, city: false }));
+
+  setLocalLga("");
+  setLocalArea("");
+};
+
+  // const handleLgaChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  //   const lga = e.target.value;
+  //   setLocalLga(lga);
+  //   setForm((prev) => ({
+  //     ...prev,
+  //     zip: localArea ? `${lga}, ${localArea}`.trim() : lga,
+  //   }));
+  //   setFormValidation((prev) => ({ ...prev, zip: false }));
+  // };
 
   const handleLgaChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const lga = e.target.value;
-    setLocalLga(lga);
-    setForm((prev) => ({
-      ...prev,
-      zip: localArea ? `${lga}, ${localArea}`.trim() : lga,
-    }));
-    setFormValidation((prev) => ({ ...prev, zip: false }));
-  };
+  const lga = e.target.value;
+
+  setLocalLga(lga);
+
+  setForm((prev) => ({
+    ...prev,
+    zip: localArea ? `${lga}, ${localArea}` : lga,
+  }));
+
+  setFormValidation((prev) => ({ ...prev, zip: false }));
+};
+
+  // const handleAreaChange = (e: ChangeEvent<HTMLInputElement>) => {
+  //   const area = e.target.value;
+  //   setLocalArea(area);
+  //   setForm((prev) => ({
+  //     ...prev,
+  //     zip: localLga ? (area ? `${localLga}, ${area}` : localLga) : area,
+  //   }));
+  //   setFormValidation((prev) => ({ ...prev, zip: false }));
+  // };
 
   const handleAreaChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const area = e.target.value;
-    setLocalArea(area);
-    setForm((prev) => ({
-      ...prev,
-      zip: localLga ? (area ? `${localLga}, ${area}` : localLga) : area,
-    }));
-    setFormValidation((prev) => ({ ...prev, zip: false }));
-  };
+  const area = e.target.value;
+
+  setLocalArea(area);
+
+  setForm((prev) => ({
+    ...prev,
+    zip: localLga ? (area ? `${localLga}, ${area}` : localLga) : area,
+  }));
+
+  setFormValidation((prev) => ({ ...prev, zip: false }));
+};
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
