@@ -7,28 +7,33 @@ export default function SlideNotification({ url }: { url: string }) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    setShow(true);
+    const seen = sessionStorage.getItem("profileNotificationSeen");
 
-    const timer = setTimeout(() => {
-      setShow(false);
-    }, 5000); // visible for 5 seconds
+    if (!seen) {
+      setShow(true);
+      sessionStorage.setItem("profileNotificationSeen", "true");
 
-    return () => clearTimeout(timer);
+      const timer = setTimeout(() => {
+        setShow(false);
+      }, 4000);
+
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   if (!show) return null;
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] w-[82%] max-w-lg animate-slide-down">
-      <div className="bg-white shadow-xl border border-gray-200 rounded-2xl px-5 py-3 sm:px-7 sm:py-4 flex items-center justify-between gap-3">
-        
-        <span className="text-base sm:text-lg text-gray-800 font-medium">
-          Please complete your profile to unlock all features.
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] w-[92%] max-w-md animate-slide-down">
+      <div className="bg-white shadow-lg border border-gray-200 rounded-xl px-4 py-2.5 flex items-center justify-between gap-3">
+
+        <span className="text-sm sm:text-base text-gray-700">
+          Please complete your profile.
         </span>
 
         <Link
           href={url}
-          className="shrink-0 bg-primary text-white font-semibold text-sm sm:text-base px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+          className="shrink-0 text-primary font-semibold text-sm hover:underline"
         >
           Go to Profile
         </Link>
