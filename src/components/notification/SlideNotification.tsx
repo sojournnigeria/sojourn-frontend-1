@@ -2,16 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 
 export default function SlideNotification({ url }: { url: string }) {
   const [show, setShow] = useState(false);
 
-  useEffect(() => {
-    const seen = sessionStorage.getItem("profileNotificationSeen");
+  const isLoggedIn = useSelector((state: RootState) => state.user.loggedIn);
 
-    if (!seen) {
+  useEffect(() => {
+    if (isLoggedIn) {
       setShow(true);
-      sessionStorage.setItem("profileNotificationSeen", "true");
 
       const timer = setTimeout(() => {
         setShow(false);
@@ -19,15 +20,14 @@ export default function SlideNotification({ url }: { url: string }) {
 
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [isLoggedIn]);
 
   if (!show) return null;
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] w-[92%] max-w-md animate-slide-down">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] w-[92%] max-w-sm animate-slide-down">
       <div className="bg-white shadow-lg border border-gray-200 rounded-xl px-4 py-2.5 flex items-center justify-between gap-3">
-
-        <span className="text-sm sm:text-base text-gray-700">
+        <span className="text-sm text-gray-700">
           Please complete your profile.
         </span>
 
@@ -37,7 +37,6 @@ export default function SlideNotification({ url }: { url: string }) {
         >
           Go to Profile
         </Link>
-
       </div>
     </div>
   );
