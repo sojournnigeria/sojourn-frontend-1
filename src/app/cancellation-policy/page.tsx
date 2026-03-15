@@ -654,10 +654,10 @@ export default function CancellationPolicyPage() {
             our support team.
           </p>
           <Link
-            href="mailto:support@sojourn.ng"
+            href="mailto:info@sojourn.ng"
             className="inline-block mt-6 px-8 py-3.5 bg-white text-primary font-semibold rounded-xl hover:bg-gray-100 transition-colors shadow-lg"
           >
-            support@sojourn.ng
+            info@sojourn.ng
           </Link>
         </div>
       </section>
