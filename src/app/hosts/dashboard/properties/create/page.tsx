@@ -11,6 +11,8 @@ import {
 } from "react";
 import type { RootState } from "@/store";
 import { useSelector } from "react-redux";
+import { useQuery } from "@tanstack/react-query";
+import { me } from "@/http/api";
 import { FormStates } from "@/store/features/inspection-request-slice";
 import {
   Ammenities,
@@ -32,10 +34,10 @@ import {
   CreateInspectionFormValidationType,
   defaultValidationValues,
   defaultValues,
+  getInspectionProgress,
 } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import Image from "next/image";
 
 const LocationOnMap: any = dynamic(
   async () => {
@@ -48,7 +50,26 @@ const LocationOnMap: any = dynamic(
 );
 
 export default () => {
-  let formOpen = useSelector((state: RootState) => state.inspection.formOpen);
+  const formOpen = useSelector((state: RootState) => state.inspection?.formOpen);
+  const hostIdFromStore = useSelector(
+    (state: RootState) => state.user?.me?.host?.id as string | undefined
+  );
+  const isAuthenticatedFromStore = useSelector(
+    (state: RootState) => !!state.user?.me?.id
+  );
+
+  // When the nav is hidden (create page), HamburgerButton never fires, so
+  // Redux is empty. Fall back to a direct API call to determine host status.
+  const { data: meData } = useQuery({
+    queryKey: ["me-create-page"],
+    queryFn: () => me("hosts"),
+    enabled: !hostIdFromStore && !isAuthenticatedFromStore,
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const hostId = hostIdFromStore || meData?.host?.id || undefined;
+  const isAuthenticated = isAuthenticatedFromStore || !!(meData?.host?.id || meData?.user?.id);
 
   const [currentFormState, setFormState] = useState<FormStates>("section-1");
 
@@ -75,13 +96,13 @@ export default () => {
       CurrentFormState = FormDescription;
       break;
     case "section-2":
-      CurrentFormState = TitleAndPropertyDescription;
+      CurrentFormState = TypeOfProperty;
       break;
     case "section-3":
-      CurrentFormState = UploadPropertyImages;
+      CurrentFormState = TitleAndPropertyDescription;
       break;
     case "section-4":
-      CurrentFormState = TypeOfProperty;
+      CurrentFormState = UploadPropertyImages;
       break;
     case "section-5":
       CurrentFormState = PropertyLocation;
@@ -109,6 +130,7 @@ export default () => {
       break;
     case "section-13":
       CurrentFormState = PropertyCreatedMessage;
+      break;
     default:
       break;
   }
@@ -204,25 +226,68 @@ export default () => {
     }
   }, [currentFormState]);
 
-  return (
-    <div className="w-full h-full bg-white text-black z-[9999999999]">
-      <div className="w-full h-[60px] top-0 flex items-center justify-between px-5 ">
-        <Image
-          src="/assets/logo/sojourn-logo.svg"
-          alt="sojourn_logo"
-          width={100}
-          height={100}
-          priority
-        />
-        <Link
-          href="/hosts/dashboard/properties"
-          className="border-0 outline-none text-sm py-2 px-7 flex tems-center space-x-1 rounded-full bg-primary text-white font-semibold ease duration-300 hover:bg-red-700"
-        >
-          <span> Cancel</span>
-          <X color="white" size={18} />
-        </Link>
+  const { step, total, label } = getInspectionProgress(currentFormState);
+  const isSuccess = currentFormState === "section-13";
+  // Only show guard when we're certain: user is logged in but has no host profile
+  const showGuard = isAuthenticated && !hostId;
+
+  if (showGuard) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center p-8">
+          <p className="text-gray-600 mb-4">
+            You need to complete your host profile before creating a listing.
+          </p>
+          <Link
+            href="/hosts/dashboard/properties"
+            className="text-primary font-semibold hover:underline"
+          >
+            Back to properties
+          </Link>
+        </div>
       </div>
-      <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden">
+    );
+  }
+
+  return (
+    <div className="w-full h-full bg-white text-black z-[9999999999] relative">
+      {/* Cancel button — floating top-right */}
+      <Link
+        href="/hosts/dashboard/properties"
+        className="fixed top-4 right-5 z-50 border-0 outline-none text-sm py-2 px-6 flex items-center space-x-1.5 rounded-full bg-white/90 backdrop-blur-sm text-gray-700 font-semibold shadow-lg hover:bg-white transition-all duration-200"
+      >
+        <span>Cancel</span>
+        <X size={16} />
+      </Link>
+
+      {/* Progress indicator — hidden on success */}
+      {!isSuccess && (
+        <div className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-4 py-3">
+          <div className="max-w-[1400px] mx-auto flex flex-col gap-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium text-gray-700">
+                Step {step} of {total}
+              </span>
+              <span className="text-gray-500 truncate max-w-[60%]">
+                {label}
+              </span>
+            </div>
+            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-300 ease-out rounded-full"
+                style={{ width: `${(step / total) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`w-full flex flex-col items-center overflow-y-auto overflow-x-hidden ${
+          !isSuccess ? "pt-16" : ""
+        }`}
+        style={{ minHeight: "100vh" }}
+      >
         <CurrentFormState
           prev={prevSection}
           currentFormState={currentFormState}
