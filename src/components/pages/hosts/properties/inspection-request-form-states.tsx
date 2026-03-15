@@ -1,8 +1,6 @@
 "use client";
-import PropertiesIcon from "@/components/svgs/PropertiesIcon";
 import {
   AMMENITIES,
-  PROPERTY_TYPE_DESCRIPTIONS,
   WHAT_IS_NEAR,
 } from "@/constants";
 import {
@@ -12,6 +10,26 @@ import {
   MoveRight,
   School,
   X,
+  Home,
+  Camera,
+  MapPin,
+  ClipboardList,
+  DollarSign,
+  CalendarCheck,
+  ArrowRight,
+  Sparkles,
+  PartyPopper,
+  Sun,
+  Maximize,
+  ImageIcon,
+  Users,
+  Building2,
+  Bath,
+  BedDouble,
+  Trash2,
+  Plus,
+  Upload,
+  Info,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -28,18 +46,18 @@ import {
   useRef,
   useState,
 } from "react";
-import PersonsIcon from "@/components/svgs/PersonsIcon";
 import React from "react";
 import { Switch } from "@/components/ui/switch";
 import {
   CreateInspectionForm,
   CreateInspectionFormValidationType,
+  RoomFormEntry,
   defaultValues,
+  getInspectionValidationResult,
   validateAmmenities,
   validateBasicPropertyDetailsSection,
   validateContactInfo,
   validateHouseRules,
-  validateInspection,
   validateInspectionDateAndTime,
   validateNumberOfPictures,
   validatePrice,
@@ -49,9 +67,17 @@ import {
 } from "@/lib/utils";
 
 import Spinner from "@/components/svgs/Spinner";
+import PanoramaUpload, {
+  PanoramaFile,
+} from "@/components/property/panorama-upload";
 import { FormStates } from "@/store/features/inspection-request-slice";
-import { createInspection } from "@/http/api";
-import { useMutation } from "@tanstack/react-query";
+import {
+  NIGERIAN_STATES_LGAS,
+  SOJOURN_OPERATIONAL_STATES,
+  stateToCityValue,
+} from "@/constants/nigerian-addresses";
+import { createInspection, getProperties, me } from "@/http/api";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { RootState } from "@/store";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
@@ -60,51 +86,272 @@ const CalendarDateAndTime = dynamic(
   () => import("@/components/ui/calendar-date-time")
 );
 
+const LISTING_STEPS = [
+  {
+    icon: Home,
+    title: "Describe your place",
+    desc: "Share your property title, type, number of rooms, and a short description.",
+  },
+  {
+    icon: Camera,
+    title: "Add photos",
+    desc: "Upload high-quality images so guests can see what makes your space special.",
+  },
+  {
+    icon: MapPin,
+    title: "Set your location",
+    desc: "Pin your property on the map and tell us about the neighbourhood.",
+  },
+  {
+    icon: ClipboardList,
+    title: "Amenities & rules",
+    desc: "List what you offer — Wi-Fi, parking, pool — and set clear house rules.",
+  },
+  {
+    icon: DollarSign,
+    title: "Set your price",
+    desc: "Choose a nightly rate. You'll see a breakdown of fees and what you earn.",
+  },
+  {
+    icon: CalendarCheck,
+    title: "Schedule inspection",
+    desc: "Pick a date for our team to verify and approve your property listing.",
+  },
+];
+
 export const FormDescription: FC<{
   next: () => void;
   prev: (e: MouseEvent<HTMLButtonElement>) => void;
 }> = ({ next, prev }) => {
+  const hostId = useSelector((state: RootState) => state.user.me?.host?.id);
+  const [ready, setReady] = useState(false);
+
+  const { data: existingProperties } = useQuery({
+    queryKey: ["host-properties-check", hostId],
+    queryFn: () => getProperties(hostId!),
+    enabled: !!hostId,
+  });
+
+  const isFirstListing =
+    !existingProperties || (Array.isArray(existingProperties) && existingProperties.length === 0);
+
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 100);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         next();
       }}
-      className="w-full relative h-full overflow-y-auto flex flex-col items-center justify-center 2xl:max-w-[1400px] 2xl:mx-auto"
+      className="w-full relative h-full overflow-y-auto bg-primary overflow-x-hidden"
     >
-      <div className="w-full flex flex-col-reverse items-center justify-center md:flex-row md:space-x-6  md:w-full">
-        <div className="w-4/5 mt-4 md:mt-0 md:w-1/2">
-          <h2 className="text-xl md:text-3xl font-bold mb-4">
-            Tell us about your place
-          </h2>
-          <p className="w-full">
-            In this step, we will ask you questions regarding the property like
-            the name, location and etc. You will also be required to fill the
-            number of guests the property can take and a convenient date for a
-            formal inspection of the property.
-          </p>
+      {/* ── Vector background ── */}
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        {/* Houses silhouette along bottom */}
+        <svg className="absolute bottom-0 left-0 w-full h-56 sm:h-72" viewBox="0 0 1200 200" fill="none" preserveAspectRatio="xMidYMax slice">
+          <rect x="0" y="180" width="1200" height="20" fill="rgba(255,255,255,0.06)" />
+          <g className="activity-bg-float-2" style={{ transformOrigin: "120px 180px" }}>
+            <rect x="80" y="130" width="80" height="50" fill="rgba(255,255,255,0.07)" />
+            <polygon points="80,130 120,95 160,130" fill="rgba(255,255,255,0.08)" />
+            <rect x="105" y="150" width="18" height="30" fill="rgba(255,255,255,0.04)" />
+            <rect x="88" y="142" width="12" height="12" fill="rgba(255,255,255,0.04)" />
+            <rect x="138" y="142" width="12" height="12" fill="rgba(255,255,255,0.04)" />
+          </g>
+          <g>
+            <rect x="220" y="100" width="70" height="80" fill="rgba(255,255,255,0.07)" />
+            <polygon points="220,100 255,65 290,100" fill="rgba(255,255,255,0.09)" />
+            <rect x="243" y="145" width="16" height="35" fill="rgba(255,255,255,0.04)" />
+            <rect x="228" y="112" width="12" height="12" fill="rgba(255,255,255,0.04)" />
+            <rect x="260" y="112" width="12" height="12" fill="rgba(255,255,255,0.04)" />
+          </g>
+          <g>
+            <rect x="340" y="80" width="60" height="100" fill="rgba(255,255,255,0.07)" />
+            <rect x="348" y="90" width="10" height="10" fill="rgba(255,255,255,0.04)" />
+            <rect x="363" y="90" width="10" height="10" fill="rgba(255,255,255,0.04)" />
+            <rect x="378" y="90" width="10" height="10" fill="rgba(255,255,255,0.04)" />
+            <rect x="348" y="108" width="10" height="10" fill="rgba(255,255,255,0.04)" />
+            <rect x="363" y="108" width="10" height="10" fill="rgba(255,255,255,0.04)" />
+            <rect x="378" y="108" width="10" height="10" fill="rgba(255,255,255,0.04)" />
+            <rect x="360" y="150" width="18" height="30" fill="rgba(255,255,255,0.04)" />
+          </g>
+          <g className="activity-bg-float-1" style={{ transformOrigin: "500px 180px" }}>
+            <rect x="460" y="125" width="90" height="55" fill="rgba(255,255,255,0.07)" />
+            <polygon points="455,125 505,80 555,125" fill="rgba(255,255,255,0.08)" />
+            <rect x="490" y="148" width="20" height="32" fill="rgba(255,255,255,0.04)" />
+            <rect x="465" y="138" width="14" height="14" fill="rgba(255,255,255,0.04)" />
+            <rect x="530" y="138" width="14" height="14" fill="rgba(255,255,255,0.04)" />
+          </g>
+          <g>
+            <rect x="700" y="115" width="85" height="65" fill="rgba(255,255,255,0.07)" />
+            <polygon points="700,115 742,75 785,115" fill="rgba(255,255,255,0.08)" />
+            <rect x="730" y="148" width="18" height="32" fill="rgba(255,255,255,0.04)" />
+            <rect x="708" y="128" width="12" height="12" fill="rgba(255,255,255,0.04)" />
+            <rect x="758" y="128" width="12" height="12" fill="rgba(255,255,255,0.04)" />
+          </g>
+          <g>
+            <rect x="950" y="120" width="75" height="60" fill="rgba(255,255,255,0.07)" />
+            <polygon points="950,120 987,85 1025,120" fill="rgba(255,255,255,0.08)" />
+            <rect x="975" y="148" width="16" height="32" fill="rgba(255,255,255,0.04)" />
+          </g>
+          <g>
+            <rect x="1080" y="110" width="65" height="70" fill="rgba(255,255,255,0.07)" />
+            <polygon points="1080,110 1112,75 1145,110" fill="rgba(255,255,255,0.09)" />
+            <rect x="1100" y="148" width="16" height="32" fill="rgba(255,255,255,0.04)" />
+          </g>
+        </svg>
+
+        {/* Trees */}
+        <svg className="absolute bottom-0 left-0 w-full h-56 sm:h-72 activity-bg-float-1" viewBox="0 0 1200 200" fill="none" preserveAspectRatio="xMidYMax slice">
+          <rect x="40" y="155" width="6" height="25" fill="rgba(255,255,255,0.06)" />
+          <circle cx="43" cy="145" r="18" fill="rgba(255,255,255,0.05)" />
+          <circle cx="35" cy="150" r="14" fill="rgba(255,255,255,0.04)" />
+          <rect x="195" y="158" width="5" height="22" fill="rgba(255,255,255,0.06)" />
+          <circle cx="197" cy="148" r="16" fill="rgba(255,255,255,0.05)" />
+          <rect x="427" y="155" width="5" height="25" fill="rgba(255,255,255,0.06)" />
+          <polygon points="410,155 430,110 450,155" fill="rgba(255,255,255,0.05)" />
+          <polygon points="415,140 430,100 445,140" fill="rgba(255,255,255,0.04)" />
+          <rect x="620" y="160" width="5" height="20" fill="rgba(255,255,255,0.06)" />
+          <circle cx="622" cy="150" r="15" fill="rgba(255,255,255,0.05)" />
+          <rect x="780" y="152" width="5" height="28" fill="rgba(255,255,255,0.06)" />
+          <polygon points="763,152 783,100 803,152" fill="rgba(255,255,255,0.05)" />
+          <rect x="890" y="158" width="5" height="22" fill="rgba(255,255,255,0.06)" />
+          <circle cx="892" cy="148" r="16" fill="rgba(255,255,255,0.05)" />
+          <ellipse cx="170" cy="174" rx="20" ry="10" fill="rgba(255,255,255,0.04)" />
+          <ellipse cx="580" cy="176" rx="18" ry="8" fill="rgba(255,255,255,0.04)" />
+          <ellipse cx="850" cy="175" rx="22" ry="9" fill="rgba(255,255,255,0.04)" />
+        </svg>
+
+        {/* Stars */}
+        <svg className="absolute top-0 left-0 w-full h-40" viewBox="0 0 1200 120" fill="none" preserveAspectRatio="xMidYMin slice">
+          <circle cx="80" cy="25" r="1.5" fill="rgba(255,255,255,0.18)" className="activity-bg-pulse" />
+          <circle cx="200" cy="50" r="1" fill="rgba(255,255,255,0.14)" className="activity-bg-pulse-delay" />
+          <circle cx="350" cy="18" r="1.5" fill="rgba(255,255,255,0.12)" className="activity-bg-pulse" />
+          <circle cx="520" cy="40" r="1" fill="rgba(255,255,255,0.18)" className="activity-bg-pulse-delay" />
+          <circle cx="680" cy="15" r="1.5" fill="rgba(255,255,255,0.14)" className="activity-bg-pulse" />
+          <circle cx="800" cy="55" r="1" fill="rgba(255,255,255,0.12)" className="activity-bg-pulse-delay" />
+          <circle cx="950" cy="30" r="1.5" fill="rgba(255,255,255,0.18)" className="activity-bg-pulse" />
+          <circle cx="1100" cy="20" r="1" fill="rgba(255,255,255,0.14)" className="activity-bg-pulse-delay" />
+          <circle cx="1050" cy="65" r="1" fill="rgba(255,255,255,0.12)" className="activity-bg-pulse" />
+          <circle cx="140" cy="70" r="1" fill="rgba(255,255,255,0.10)" className="activity-bg-pulse-delay" />
+          <circle cx="450" cy="75" r="1.5" fill="rgba(255,255,255,0.12)" className="activity-bg-pulse" />
+          <circle cx="750" cy="80" r="1" fill="rgba(255,255,255,0.14)" className="activity-bg-pulse-delay" />
+        </svg>
+
+        {/* Warm glows */}
+        <div className="absolute bottom-0 left-1/4 w-96 h-48 rounded-full bg-white/[0.04] blur-[80px]" />
+        <div className="absolute bottom-0 right-1/4 w-72 h-40 rounded-full bg-white/[0.05] blur-[60px]" />
+        <div className="absolute top-1/3 right-0 w-64 h-64 rounded-full bg-white/[0.03] blur-[100px]" />
+      </div>
+
+      {/* ── Content (above background) ── */}
+      <div className="relative z-10 mx-auto max-w-5xl px-6 sm:px-10 pt-10 sm:pt-16 pb-28 flex flex-col items-center min-h-full justify-center">
+        {/* ── Hero message ── */}
+        <div
+          className="mb-12 text-center transition-all duration-700 ease-out"
+          style={{
+            opacity: ready ? 1 : 0,
+            transform: ready ? "translateY(0)" : "translateY(24px)",
+          }}
+        >
+          {isFirstListing ? (
+            <>
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white leading-[1.1] font-[var(--font-playfair)]">
+                Congratulations on listing your first property!
+              </h1>
+              <p className="mt-4 text-base sm:text-lg text-white/70 max-w-2xl mx-auto leading-relaxed">
+                You&apos;re about to join a community of hosts earning on Sojourn.
+                We&apos;ll walk you through every step — it only takes a few minutes.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white leading-[1.1] font-[var(--font-playfair)]">
+                Tell us about your apartment
+              </h1>
+              <p className="mt-4 text-base sm:text-lg text-white/70 max-w-2xl mx-auto leading-relaxed">
+                Great to have you back! Let&apos;s add another property to your portfolio.
+                Here&apos;s what the process looks like.
+              </p>
+            </>
+          )}
         </div>
-        <div className="w-5/6 h-[170px] relative rounded-lg shadow-2xl md:w-[340px] h-[200px]">
-          <Image
-            src="/assets/imgs/property-5.jpg"
-            alt="house image"
-            fill
-            priority={true}
-            className=""
-          />
+
+        {/* ── Numbered steps — 2-column grid ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8 w-full max-w-4xl">
+          {LISTING_STEPS.map((step, i) => {
+            const Icon = step.icon;
+            const delay = 200 + i * 100;
+            return (
+              <div
+                key={step.title}
+                className="flex gap-4 transition-all duration-700 ease-out"
+                style={{
+                  opacity: ready ? 1 : 0,
+                  transform: ready ? "translateY(0)" : "translateY(20px)",
+                  transitionDelay: `${delay}ms`,
+                }}
+              >
+                <span className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white text-primary flex items-center justify-center text-xl sm:text-2xl font-extrabold shadow-lg">
+                  {i + 1}
+                </span>
+
+                <div className="pt-0.5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Icon className="w-4 h-4 text-white/60" />
+                    <h3 className="text-base sm:text-lg font-bold text-white">
+                      {step.title}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-white/60 leading-relaxed">
+                    {step.desc}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── Get Started button ── */}
+        <div
+          className="mt-12 flex justify-center transition-all duration-700 ease-out"
+          style={{
+            opacity: ready ? 1 : 0,
+            transform: ready ? "translateY(0)" : "translateY(20px)",
+            transitionDelay: "1000ms",
+          }}
+        >
+          <button
+            type="submit"
+            className="group inline-flex items-center gap-3 bg-white hover:bg-gray-50 text-primary font-bold text-lg sm:text-xl px-12 sm:px-16 py-4 sm:py-5 rounded-2xl transition-all duration-300 active:scale-[0.97] shadow-xl shadow-black/10 hover:shadow-2xl"
+          >
+            Get Started
+            <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 group-hover:translate-x-1" />
+          </button>
         </div>
       </div>
-      <div className="w-full fixed h-[60px] bg-white bottom-0 border-t border-t-gray-400 flex items-center justify-between px-5">
-        <button
-          onClick={prev}
-          className="border-0 outline-none text-sm py-2 px-7 bg-white text-black font-semibold underline"
-        >
-          Back
-        </button>
-        <button className="border-0 outline-none text-sm py-2 px-7 flex items-center space-x-2 rounded-full bg-black text-white font-semibold ease duration-300 hover:bg-red-700">
-          <span> Next</span>
-          <MoveRight color="white" size={20} />
-        </button>
+
+      {/* ── Logo pinned to bottom-left corner ── */}
+      <div
+        className="fixed bottom-10 left-10 z-40 transition-all duration-700 ease-out"
+        style={{
+          opacity: ready ? 1 : 0,
+          transform: ready ? "translateY(0)" : "translateY(12px)",
+          transitionDelay: "1200ms",
+        }}
+      >
+        <div className="animate-pulse">
+            <Image
+              src="/assets/logo/soj_white.svg"
+              alt="Sojourn"
+              width={50}
+              height={50}
+              priority
+              className="opacity-60"
+          />
+        </div>
       </div>
     </form>
   );
@@ -280,6 +527,13 @@ export const TitleAndPropertyDescription: FC<{
   );
 };
 
+const PHOTO_TIPS = [
+  { icon: Sun, title: "Natural lighting", desc: "Shoot during the day with curtains open — bright spaces feel larger and more inviting." },
+  { icon: Maximize, title: "Wide angles", desc: "Capture full rooms from a corner to show the entire layout in one shot." },
+  { icon: Sparkles, title: "Clean & styled", desc: "Tidy up, make the bed, add fresh towels — small touches make a big difference." },
+  { icon: ImageIcon, title: "At least 3 photos", desc: "Cover living areas, bedrooms, kitchen, bathroom, and any standout features." },
+];
+
 export const UploadPropertyImages: FC<{
   form: CreateInspectionForm;
   setForm: Dispatch<SetStateAction<CreateInspectionForm>>;
@@ -310,7 +564,7 @@ export const UploadPropertyImages: FC<{
     };
 
   const handleUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const { files, name } = e.target;
+    const { files } = e.target;
     const listOfPhotos = files as FileList;
 
     if (listOfPhotos.length + photos.length > 10) {
@@ -331,7 +585,7 @@ export const UploadPropertyImages: FC<{
       ...prevState,
       files: [...prevState.files, ...filesList],
     }));
-    if (filesList.length > 2) {
+    if ([...form.files, ...filesList].length >= 3) {
       setFormValidation((prev) => ({ ...prev, files: false }));
       setError("");
     }
@@ -346,7 +600,6 @@ export const UploadPropertyImages: FC<{
       const url = URL.createObjectURL(listOfPhotos[i]);
       displayUrls.push(url);
     }
-
     setPhotos(displayUrls);
   }, []);
 
@@ -358,114 +611,220 @@ export const UploadPropertyImages: FC<{
 
         if (Object.keys(values).length) {
           setFormValidation((prev) => ({ ...prev, ...values }));
-          setError("Number of images cannot be less than 3.");
+          setError("You need at least 3 photos to continue.");
           return;
         } else {
           next();
         }
       }}
-      className="w-full relative h-full overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
+      className="w-full relative h-full overflow-y-auto"
     >
-      <div className="w-full flex flex-col items-center min-h-[100px] md:w-5/6 about-one max-w-[1400px] mx-auto">
-        {error && (
-          <span className="text-primary font-semibold mb-4">{error}</span>
-        )}
-        {photos.length ? (
-          <p className="text-sm text-gray-400 mb-3">
-            Click on image tile to remove it.{form.files.length}
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-28">
+        {/* ── Header ── */}
+        <div className="mb-8">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight">
+            Add property photos
+          </h2>
+          <p className="mt-2 text-sm sm:text-base text-gray-500 max-w-xl">
+            Great photos are the #1 reason guests book. Show off your space — upload between 3 and 10 images.
           </p>
-        ) : (
-          ""
+        </div>
+
+        {/* ── Error ── */}
+        {error && (
+          <div className="mb-6 flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm font-medium px-4 py-3 rounded-xl">
+            <X className="w-4 h-4 flex-shrink-0" />
+            {error}
+          </div>
         )}
-        {photos.length ? (
-          <div className="w-full flex flex-col items-center">
-            <div className="w-5/6 grid grid-cols-2 gap-4 md:grid-cols-4 md:w-full lg:w-4/6">
-              {photos.map((url, idx: number) => (
-                <div
-                  onClick={removePhotoByIndex(idx)}
-                  key={idx}
-                  className="w-full h-[150px] rounded-md relative about-one shadow-xl group"
-                >
-                  <span className="hidden absolute items-center justify-center w-full h-full bg-paper opacity-30 top-0 left-0 z-50 cursor-pointer group-hover:flex">
-                    <X size={60} color="red" />
-                  </span>
-                  <Image
-                    src={url}
-                    alt="property image"
-                    fill
-                    priority
-                    className="rounded-md"
-                  />
+
+        {/* ── Two-column layout: Upload area + Tips ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+
+          {/* Left: Upload zone + photo grid (3 cols on lg) */}
+          <div className="lg:col-span-3 space-y-6">
+
+            {/* Photo grid */}
+            {photos.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs sm:text-sm text-gray-400">
+                    Click a photo to remove it &middot; {photos.length}/10 uploaded
+                  </p>
+                  {photos.length < 10 && (
+                    <button
+                      type="button"
+                      onClick={() => fileUploadRef.current.click()}
+                      className="text-xs sm:text-sm font-semibold text-primary hover:text-red-700 transition-colors"
+                    >
+                      + Add more
+                    </button>
+                  )}
                 </div>
-              ))}
-            </div>
-            {photos.length < 6 && (
-              <button
-                className="p-2 bg-secondary rounded-md absolute bottom-[-50px]"
-                onClick={(e) => {
-                  e.preventDefault();
-                  fileUploadRef.current.click();
-                }}
-              >
-                upload more..
-              </button>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {photos.map((url, idx) => (
+                    <div
+                      onClick={removePhotoByIndex(idx)}
+                      key={idx}
+                      className="relative aspect-[4/3] rounded-xl overflow-hidden shadow-md cursor-pointer group ring-1 ring-gray-200 hover:ring-primary transition-all"
+                    >
+                      <Image
+                        src={url}
+                        alt={`Property photo ${idx + 1}`}
+                        fill
+                        priority
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                        <X className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      {idx === 0 && (
+                        <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          Cover
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
+
+            {/* Drop zone */}
+            <div
+              onClick={() => fileUploadRef.current.click()}
+              className={`relative flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${
+                photos.length === 0
+                  ? "border-gray-300 bg-gray-50 hover:border-primary hover:bg-red-50/30 py-16 sm:py-20"
+                  : "border-gray-200 bg-gray-50/50 hover:border-primary py-8"
+              }`}
+            >
+              <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
+                <Camera className="w-6 h-6 text-gray-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm sm:text-base font-semibold text-gray-700">
+                  {photos.length === 0 ? "Upload your property photos" : "Upload more photos"}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  JPG, PNG or JPEG &middot; Max 10 images
+                </p>
+              </div>
+              <span className="text-xs font-bold text-primary border border-primary rounded-full px-4 py-1.5 hover:bg-primary hover:text-white transition-colors">
+                Browse files
+              </span>
+            </div>
             <input
               onChange={handleUpload}
               name="photos"
               ref={fileUploadRef}
               className="hidden"
               type="file"
+              accept="image/jpeg,image/png,image/jpg"
               multiple
             />
+
+            {/* 360° Panorama */}
+            <div className="mt-4">
+              <PanoramaUpload
+                panoramas={form.panoramaFiles as PanoramaFile[]}
+                onChange={(updated) =>
+                  setForm((prev) => ({ ...prev, panoramaFiles: updated }))
+                }
+              />
+            </div>
           </div>
-        ) : (
-          <>
-            <h3 className="text-xl md:text-3xl mb-5">Add property photos.</h3>
-            <div className="w-full flex justify-center h-[300px]">
-              <div className="w-5/6 h-full flex items-center flex-col space-y-2 justify-center bg-[#fef7ea] rounded-md border-2 border-dashed border-[#F0AE2F] md:w-3/6">
-                <p className="text-sm  px-2 md:text-md md:px-0 text-black">
-                  Accepted file formats (.jpg, .png, .jpeg)
+
+          {/* Right: Photo tips (2 cols on lg) */}
+          <div className="lg:col-span-2">
+            <div className="bg-gray-50 rounded-2xl p-5 sm:p-6 border border-gray-100">
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">
+                Tips for great photos
+              </h3>
+              <div className="space-y-5">
+                {PHOTO_TIPS.map((tip) => {
+                  const TipIcon = tip.icon;
+                  return (
+                    <div key={tip.title} className="flex gap-3">
+                      <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-white border border-gray-200 flex items-center justify-center shadow-sm">
+                        <TipIcon className="w-4 h-4 text-gray-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">{tip.title}</p>
+                        <p className="text-xs text-gray-500 leading-relaxed mt-0.5">{tip.desc}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Properties with 5+ high-quality photos get <span className="font-semibold text-gray-600">3x more bookings</span> on average. First impressions matter!
                 </p>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    fileUploadRef.current.click();
-                  }}
-                  className="outline-none rounded-full border-2  border-golden-orange py-2 px-4 text-golden-orange font-bold"
-                >
-                  upload photos
-                </button>
-                <input
-                  onChange={handleUpload}
-                  name="photos"
-                  ref={fileUploadRef}
-                  className="hidden"
-                  type="file"
-                  multiple
-                />
               </div>
             </div>
-          </>
-        )}
+          </div>
+        </div>
       </div>
-      <div className="fixed bg-white w-full h-[60px] bottom-0 border-t border-t-gray-400 flex items-center justify-between px-5">
+
+      {/* ── Bottom bar ── */}
+      <div className="fixed bg-white w-full h-[60px] bottom-0 border-t border-t-gray-200 flex items-center justify-between px-5 z-30">
         <button
           onClick={prev}
           className="border-0 outline-none text-sm py-2 px-7 bg-white text-black font-semibold underline"
         >
           Back
         </button>
-        <button className="border-0 outline-none text-sm py-2 px-7 flex items-center space-x-2 rounded-full bg-black text-white font-semibold ease duration-300 hover:bg-red-700">
-          <span> Next</span>
-          <MoveRight color="white" size={20} />
+        <button className="border-0 outline-none text-sm py-2.5 px-8 flex items-center space-x-2 rounded-full bg-gray-900 text-white font-semibold ease duration-300 hover:bg-gray-800 shadow-md">
+          <span>Next</span>
+          <MoveRight color="white" size={18} />
         </button>
       </div>
     </form>
   );
 };
 
-export type PropertyTypes = "smart-share" | "prime-inn" | "town-house" | "";
+export type PropertyTypes = "prime-inn" | "town-house" | "";
+
+const PROPERTY_OPTIONS: {
+  type: PropertyTypes;
+  label: string;
+  icon: typeof Home;
+  tagline: string;
+  description: string;
+  features: string[];
+  badge?: string;
+}[] = [
+  {
+    type: "prime-inn",
+    label: "Prime Inn",
+    icon: Building2,
+    tagline: "Private apartment or hotel room",
+    description:
+      "A fully self-contained private apartment or hotel room equipped with everything a guest needs. One booking covers the entire unit.",
+    features: [
+      "Entire place for one booking",
+      "Private kitchen and bathroom",
+      "All amenities included",
+      "Best for short stays and business travel",
+      "Single price per night",
+    ],
+  },
+  {
+    type: "town-house",
+    label: "Town House",
+    icon: Home,
+    tagline: "Spacious home for longer stays",
+    description:
+      "A larger apartment or house designed for short to long-term stays (up to 6 months). Ideal for families, groups, or extended relocations.",
+    features: [
+      "Entire home with multiple rooms",
+      "Suitable for 3–6 month stays",
+      "Great for families and groups",
+      "Full kitchen and living spaces",
+      "Single price per night",
+    ],
+  },
+];
 
 export const TypeOfProperty: FC<{
   form: CreateInspectionForm;
@@ -477,91 +836,484 @@ export const TypeOfProperty: FC<{
   next: () => void;
   prev: (e: MouseEvent<HTMLButtonElement>) => void;
 }> = ({ form, setForm, formValidation, next, prev, setFormValidation }) => {
-  const isSmartHomeCss =
-    form.typeOfProperty === "smart-share"
-      ? "border-2 bg-gray-100"
-      : "border border-gray-300";
-  const isPrimeInCss =
-    form.typeOfProperty === "prime-inn"
-      ? "border-2 bg-gray-100"
-      : "border border-gray-300";
-  const isTownHouseCss =
-    form.typeOfProperty === "town-house"
-      ? "border-2 bg-gray-100"
-      : "border border-gray-300";
-
-  const selectPropertyType =
-    (value: PropertyTypes) => (e: MouseEvent<HTMLDivElement>) => {
-      setForm((prevState: any) => ({ ...prevState, typeOfProperty: value }));
-      setFormValidation((prev) => ({ ...prev, typeOfProperty: false }));
-    };
+  const selectPropertyType = (value: PropertyTypes) => {
+    setForm((prevState: any) => ({ ...prevState, typeOfProperty: value }));
+    setFormValidation((prev) => ({ ...prev, typeOfProperty: false }));
+  };
 
   return (
     <form
       onSubmit={(e: FormEvent) => {
         e.preventDefault();
         const values = validateTypeOfProperty(form);
-
         if (Object.keys(values).length) {
           setFormValidation((prev) => ({ ...prev, ...values }));
-
           return;
-        } else {
-          next();
         }
+        next();
       }}
-      className="w-full relative min-h-[400px] overflow-y-auto flex flex-col items-center max-w-[1400px] mx-auto"
+      className="w-full relative h-full overflow-y-auto"
     >
-      <div className="w-full flex flex-col ">
-        <div className="w-full flex flex-col items-center min-h-[100px] md:w-5/6 about-one max-w-[1400px] mx-auto">
-          <h3 className="text-xl md:text-3xl mb-5 text-center">
-            What best describes your place?
-          </h3>
-          {formValidation.typeOfProperty ? (
-            <span className="text-md text-primary text-center font-semibold mb-4">
-              Please select the type of property
-            </span>
-          ) : null}
-          <div className="w-5/6 grid grid-cols-2 gap-4 md:w-4/6 md:grid-cols-3 lg:w-1/2">
-            <div
-              onClick={selectPropertyType("smart-share")}
-              className={`w-full h-[100px] border-black ${isSmartHomeCss}  rounded-md cursor-pointer flex flex-col items-center justify-center`}
-            >
-              <div className="flex items-center">
-                <PersonsIcon />
-              </div>
-              <span className="font-bold">Smart Share</span>
-            </div>
-            <div
-              onClick={selectPropertyType("prime-inn")}
-              className={`w-full h-[100px] ${isPrimeInCss} border-black rounded-md cursor-pointer  flex flex-col items-center justify-center`}
-            >
-              <PropertiesIcon color="black" />
-              <span className="font-bold">Prime Inn</span>
-            </div>
-            <div
-              onClick={selectPropertyType("town-house")}
-              className={`w-full h-[100px] ${isTownHouseCss} border-black rounded-md cursor-pointer  flex flex-col items-center justify-center`}
-            >
-              <School strokeWidth={1.5} />
-              <span className="font-bold">Town House</span>
-            </div>
-          </div>
-          <p className="w-5/6 h-[70px] mt-5 text-sm text-black font-[500] md:w-4/6 lg:w-1/2">
-            {PROPERTY_TYPE_DESCRIPTIONS[form.typeOfProperty]}
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-14 pb-28">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight">
+            What type of property is this?
+          </h2>
+          <p className="mt-2 text-sm sm:text-base text-gray-500 max-w-lg mx-auto">
+            This determines how guests will book and how you&apos;ll manage your listing. Choose the one that best fits your space.
           </p>
+          {formValidation.typeOfProperty && (
+            <p className="mt-3 text-sm font-semibold text-primary">
+              Please select a property type to continue
+            </p>
+          )}
+        </div>
+
+        {/* Property type cards */}
+        <div className="space-y-4">
+          {PROPERTY_OPTIONS.map((opt) => {
+            const Icon = opt.icon;
+            const isSelected = form.typeOfProperty === opt.type;
+            return (
+              <div
+                key={opt.type}
+                onClick={() => selectPropertyType(opt.type)}
+                className={`relative cursor-pointer rounded-2xl border-2 p-5 sm:p-6 transition-all duration-200 ${
+                  isSelected
+                    ? "border-gray-900 bg-gray-50 shadow-lg"
+                    : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-md"
+                }`}
+              >
+                {/* Badge */}
+                {opt.badge && (
+                  <span className="absolute -top-2.5 right-4 bg-primary text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider">
+                    {opt.badge}
+                  </span>
+                )}
+
+                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                  {/* Icon + radio */}
+                  <div className="flex items-center gap-3 sm:flex-col sm:items-center sm:gap-2 sm:w-20 flex-shrink-0">
+                    <div
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+                        isSelected
+                          ? "bg-gray-900 text-white"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                        isSelected
+                          ? "border-gray-900"
+                          : "border-gray-300"
+                      }`}
+                    >
+                      {isSelected && (
+                        <div className="w-2.5 h-2.5 rounded-full bg-gray-900" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                        {opt.label}
+                      </h3>
+                      <span className="text-xs font-medium text-gray-400 hidden sm:inline">
+                        &mdash; {opt.tagline}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 leading-relaxed mb-3">
+                      {opt.description}
+                    </p>
+
+                    {/* Feature list */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+                      {opt.features.map((f) => (
+                        <div
+                          key={f}
+                          className="flex items-center gap-2 text-xs sm:text-sm text-gray-600"
+                        >
+                          <CheckCircle
+                            className={`w-3.5 h-3.5 flex-shrink-0 ${
+                              isSelected
+                                ? "text-emerald-500"
+                                : "text-gray-300"
+                            }`}
+                          />
+                          {f}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
-      <div className="w-full bg-white fixed h-[60px] bottom-0 border-t border-t-gray-400 flex items-center justify-between px-5">
+
+      {/* Bottom bar */}
+      <div className="fixed bg-white w-full h-[60px] bottom-0 border-t border-t-gray-200 flex items-center justify-between px-5 z-30">
         <button
           onClick={prev}
           className="border-0 outline-none text-sm py-2 px-7 bg-white text-black font-semibold underline"
         >
           Back
         </button>
-        <button className="border-0 outline-none text-sm py-2 px-7 flex items-center space-x-2 rounded-full bg-black text-white font-semibold ease duration-300 hover:bg-red-700">
-          <span> Next</span>
-          <MoveRight color="white" size={20} />
+        <button className="border-0 outline-none text-sm py-2.5 px-8 flex items-center space-x-2 rounded-full bg-gray-900 text-white font-semibold ease duration-300 hover:bg-gray-800 shadow-md">
+          <span>Next</span>
+          <MoveRight color="white" size={18} />
+        </button>
+      </div>
+    </form>
+  );
+};
+
+/* ─────────────────────────────────────────────
+   SmartShare Room Setup (section-4 for smart-share)
+   ───────────────────────────────────────────── */
+
+const generateRoomId = () => `room-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+export const SmartShareRoomSetup: FC<{
+  form: CreateInspectionForm;
+  setForm: Dispatch<SetStateAction<CreateInspectionForm>>;
+  formValidation: CreateInspectionFormValidationType;
+  setFormValidation: Dispatch<SetStateAction<CreateInspectionFormValidationType>>;
+  next: () => void;
+  prev: (e: MouseEvent<HTMLButtonElement>) => void;
+}> = ({ form, setForm, formValidation, next, prev, setFormValidation }) => {
+  const addRoom = () => {
+    const newRoom: RoomFormEntry = {
+      id: generateRoomId(),
+      name: `Room ${form.rooms.length + 1}`,
+      photos: [],
+      bathroomType: "shared",
+      capacity: 1,
+      price: 0,
+    };
+    setForm((prev) => ({ ...prev, rooms: [...prev.rooms, newRoom] }));
+  };
+
+  const updateRoom = (roomId: string, updates: Partial<RoomFormEntry>) => {
+    setForm((prev) => ({
+      ...prev,
+      rooms: prev.rooms.map((r) => (r.id === roomId ? { ...r, ...updates } : r)),
+    }));
+  };
+
+  const removeRoom = (roomId: string) => {
+    setForm((prev) => ({
+      ...prev,
+      rooms: prev.rooms.filter((r) => r.id !== roomId),
+    }));
+  };
+
+  const handleRoomPhotos = (roomId: string, files: FileList | null) => {
+    if (!files) return;
+    const newFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    updateRoom(roomId, {
+      photos: [...(form.rooms.find((r) => r.id === roomId)?.photos || []), ...newFiles].slice(0, 10),
+    });
+  };
+
+  const removeRoomPhoto = (roomId: string, photoIndex: number) => {
+    const room = form.rooms.find((r) => r.id === roomId);
+    if (!room) return;
+    updateRoom(roomId, {
+      photos: room.photos.filter((_, i) => i !== photoIndex),
+    });
+  };
+
+  const handleSharedSpacePhotos = (files: FileList | null) => {
+    if (!files) return;
+    const newFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    setForm((prev) => ({
+      ...prev,
+      sharedSpaceFiles: [...prev.sharedSpaceFiles, ...newFiles].slice(0, 10),
+    }));
+  };
+
+  const removeSharedPhoto = (index: number) => {
+    setForm((prev) => ({
+      ...prev,
+      sharedSpaceFiles: prev.sharedSpaceFiles.filter((_, i) => i !== index),
+    }));
+  };
+
+  const validate = () => {
+    if (form.rooms.length === 0) {
+      setFormValidation((prev) => ({ ...prev, rooms: true }));
+      return false;
+    }
+    for (const room of form.rooms) {
+      if (room.photos.length === 0) {
+        setFormValidation((prev) => ({ ...prev, rooms: true }));
+        return false;
+      }
+      if (!room.name.trim()) {
+        setFormValidation((prev) => ({ ...prev, rooms: true }));
+        return false;
+      }
+    }
+    setFormValidation((prev) => ({ ...prev, rooms: false }));
+    return true;
+  };
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (validate()) next();
+      }}
+      className="w-full h-full overflow-y-auto"
+    >
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-28">
+        {/* Header */}
+        <div className="mb-8">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+            Set up your rooms
+          </h2>
+          <p className="mt-2 text-sm sm:text-base text-gray-500 max-w-xl">
+            Since this is a Smart Share property, each room can be booked individually.
+            Add each room with its photos, capacity, bathroom type, and price.
+          </p>
+          {formValidation.rooms && (
+            <p className="mt-3 text-sm font-semibold text-primary">
+              Add at least one room with a name and at least one photo each.
+            </p>
+          )}
+        </div>
+
+        {/* Room cards */}
+        <div className="space-y-5">
+          {form.rooms.map((room, idx) => (
+            <div
+              key={room.id}
+              className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 shadow-sm"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">
+                  Room {idx + 1}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => removeRoom(room.id)}
+                  className="text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 className="w-4.5 h-4.5" />
+                </button>
+              </div>
+
+              {/* Room name */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Room name
+                </label>
+                <input
+                  type="text"
+                  value={room.name}
+                  onChange={(e) => updateRoom(room.id, { name: e.target.value })}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
+                  placeholder="e.g. Master Bedroom, Room A"
+                />
+              </div>
+
+              {/* Bathroom type + capacity row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <Bath className="w-3.5 h-3.5 inline mr-1" />
+                    Bathroom
+                  </label>
+                  <div className="flex gap-2">
+                    {(["ensuite", "shared"] as const).map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => updateRoom(room.id, { bathroomType: type })}
+                        className={`flex-1 rounded-lg border-2 py-2 text-sm font-medium capitalize transition-all ${
+                          room.bathroomType === type
+                            ? "border-gray-900 bg-gray-900 text-white"
+                            : "border-gray-200 text-gray-600 hover:border-gray-300"
+                        }`}
+                      >
+                        {type === "ensuite" ? "En-suite" : "Shared"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <BedDouble className="w-3.5 h-3.5 inline mr-1" />
+                    Max guests
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateRoom(room.id, {
+                          capacity: Math.max(1, room.capacity - 1),
+                        })
+                      }
+                      className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-lg font-bold text-gray-600 hover:bg-gray-50"
+                    >
+                      &minus;
+                    </button>
+                    <span className="text-lg font-bold w-8 text-center">
+                      {room.capacity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateRoom(room.id, {
+                          capacity: Math.min(10, room.capacity + 1),
+                        })
+                      }
+                      className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-lg font-bold text-gray-600 hover:bg-gray-50"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Price per night */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <DollarSign className="w-3.5 h-3.5 inline mr-1" />
+                  Price per night (₦)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={room.price || ""}
+                  onChange={(e) =>
+                    updateRoom(room.id, { price: +e.target.value })
+                  }
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:border-gray-400 focus:outline-none"
+                  placeholder="0"
+                />
+              </div>
+
+              {/* Room photos */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Camera className="w-3.5 h-3.5 inline mr-1" />
+                  Room photos ({room.photos.length}/10)
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {room.photos.map((file, pi) => (
+                    <div
+                      key={pi}
+                      className="relative aspect-[4/3] rounded-lg overflow-hidden group"
+                    >
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`Room photo ${pi + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeRoomPhoto(room.id, pi)}
+                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {room.photos.length < 10 && (
+                    <label className="aspect-[4/3] rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
+                      <Upload className="w-5 h-5 text-gray-400 mb-1" />
+                      <span className="text-[10px] text-gray-400">Add</span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleRoomPhotos(room.id, e.target.files)}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Add room button */}
+          <button
+            type="button"
+            onClick={addRoom}
+            className="w-full rounded-2xl border-2 border-dashed border-gray-300 py-5 flex flex-col items-center justify-center gap-1 hover:border-gray-400 hover:bg-gray-50 transition-all"
+          >
+            <Plus className="w-6 h-6 text-gray-400" />
+            <span className="text-sm font-semibold text-gray-500">
+              Add a room
+            </span>
+          </button>
+        </div>
+
+        {/* Shared spaces section */}
+        <div className="mt-10">
+          <h3 className="text-xl font-bold text-gray-900 mb-1">
+            Shared spaces
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Upload photos of common areas guests will share — kitchen, living room, balcony, etc.
+          </p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            {form.sharedSpaceFiles.map((file, i) => (
+              <div
+                key={i}
+                className="relative aspect-[4/3] rounded-lg overflow-hidden group"
+              >
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt={`Shared space ${i + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeSharedPhoto(i)}
+                  className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+            {form.sharedSpaceFiles.length < 10 && (
+              <label className="aspect-[4/3] rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
+                <Upload className="w-5 h-5 text-gray-400 mb-1" />
+                <span className="text-[10px] text-gray-400">Add</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleSharedSpacePhotos(e.target.files)}
+                />
+              </label>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <div className="fixed bg-white w-full h-[60px] bottom-0 border-t border-t-gray-200 flex items-center justify-between px-5 z-30">
+        <button
+          onClick={prev}
+          className="border-0 outline-none text-sm py-2 px-7 bg-white text-black font-semibold underline"
+        >
+          Back
+        </button>
+        <button className="border-0 outline-none text-sm py-2.5 px-8 flex items-center space-x-2 rounded-full bg-gray-900 text-white font-semibold ease duration-300 hover:bg-gray-800 shadow-md">
+          <span>Next</span>
+          <MoveRight color="white" size={18} />
         </button>
       </div>
     </form>
@@ -578,32 +1330,92 @@ export const PropertyLocation: FC<{
   next: () => void;
   prev: (e: MouseEvent<HTMLButtonElement>) => void;
 }> = ({ form, setForm, setFormValidation, formValidation, next, prev }) => {
+  // Nigerian address: State → LGA → Area → Street → House No
+  const selectedState =
+    SOJOURN_OPERATIONAL_STATES.find(
+      (s) => stateToCityValue(s).toLowerCase() === form.city?.toLowerCase()
+    ) ?? (form.city || "");
+  const lgasForState = selectedState
+    ? (NIGERIAN_STATES_LGAS[selectedState] ?? [])
+    : [];
+  // Parse existing zip: "LGA, Area" or just "Area" for backward compatibility
+  const [localLga, setLocalLga] = useState(() => {
+    const zip = form.zip?.trim();
+    if (!zip) return "";
+    if (zip.includes(", ")) return zip.split(", ")[0] ?? "";
+    return "";
+  });
+  const [localArea, setLocalArea] = useState(() => {
+    const zip = form.zip?.trim();
+    if (!zip) return "";
+    if (zip.includes(", ")) return zip.split(", ").slice(1).join(", ").trim();
+    return zip; // Backward compat: whole zip is area
+  });
+
+  // Ensure country is Nigeria for Nigerian address form
+  useEffect(() => {
+    if (!form.country || form.country.toLowerCase() !== "nigeria") {
+      setForm((prev) => ({ ...prev, country: "nigeria" }));
+    }
+  }, [form.country, setForm]);
+
+  const handleStateChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const state = e.target.value;
+    setForm((prev) => ({
+      ...prev,
+      city: state ? stateToCityValue(state) : "",
+    }));
+    setFormValidation((prev) => ({ ...prev, city: false }));
+    setLocalLga("");
+    setLocalArea("");
+  };
+
+  const handleLgaChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const lga = e.target.value;
+    setLocalLga(lga);
+    setForm((prev) => ({
+      ...prev,
+      zip: localArea ? `${lga}, ${localArea}`.trim() : lga,
+    }));
+    setFormValidation((prev) => ({ ...prev, zip: false }));
+  };
+
+  const handleAreaChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const area = e.target.value;
+    setLocalArea(area);
+    setForm((prev) => ({
+      ...prev,
+      zip: localLga ? (area ? `${localLga}, ${area}` : localLga) : area,
+    }));
+    setFormValidation((prev) => ({ ...prev, zip: false }));
+  };
+
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
     setForm((prevState: CreateInspectionForm) => ({
       ...prevState,
-      [name]: type === "number" ? +value : value,
+      [name]: type === "number" ? +value || 0 : value,
     }));
     setFormValidation((prev) => ({ ...prev, [name]: false }));
   };
 
   const invalidCountryStyle = formValidation.country
-    ? "border-primary border-[2px]"
-    : "";
-  const invalidCityStyle = formValidation.city
-    ? "border-primary border-[2px]"
-    : "";
+    ? "border-red-500 border-2"
+    : "border-gray-200";
+  const invalidStateStyle = formValidation.city
+    ? "border-red-500 border-2"
+    : "border-gray-200";
+  const invalidLgaStyle = formValidation.zip
+    ? "border-red-500 border-2"
+    : "border-gray-200";
   const invalidStreetStyle = formValidation.street
-    ? "border-primary border-[2px]"
-    : "";
+    ? "border-red-500 border-2"
+    : "border-gray-200";
   const invalidHouseNumberStyle = formValidation.houseNumber
-    ? "border-primary border-[2px]"
-    : "";
-  const invalidZipStyle = formValidation.zip
-    ? "border-primary border-[2px]"
-    : "";
+    ? "border-red-500 border-2"
+    : "border-gray-200";
 
   const isLocationFormValid =
     formValidation.country ||
@@ -627,96 +1439,138 @@ export const PropertyLocation: FC<{
       }}
       className="w-full relative h-full overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
     >
-      <div className="w-5/6 flex flex-col items-center min-h-[100px] md:w-5/6 about-one max-w-[1400px] mx-auto">
+      <div className="w-5/6 flex flex-col items-center min-h-[100px] md:w-5/6 about-one max-w-[1400px] mx-auto pb-24">
         <div className="w-full md:w-4/6 lg:w-1/2 flex flex-col items-center">
-          <h3 className="w-full text-xl md:text-3xl mb-5 md:text-center">
+          <h3 className="w-full text-xl md:text-3xl mb-2 md:text-center font-semibold">
             Where is this property located?
           </h3>
+          <p className="w-full text-sm text-gray-600 mb-5 md:text-center">
+            Sojourn is currently available in Lagos, Abuja, Rivers, Akwa Ibom,
+            Delta, Oyo & Edo. Enter your address below.
+          </p>
           {isLocationFormValid ? (
-            <span className="text-primary font-semibold ">
-              Please fill all missing fields
+            <span className="text-red-600 font-medium text-sm mb-3">
+              Please fill all required fields
             </span>
           ) : null}
-          <div className="w-full space-y-2 mb-4">
-            <label htmlFor="country">Country</label>
-            <input
-              className={`w-[96%] border border-black rounded-md p-3 capitalize  placeholder:text-gray-300 text-md disabled:cursor-not-allowed ${invalidCountryStyle}`}
-              name="country"
-              id="country"
-              disabled
-              onChange={handleChange}
-              placeholder="Nigeria"
-              value={form.country}
-            />
-          </div>
-          <div className="w-full flex flex-col items-center md:flex-row">
-            <div className="w-full space-y-2 mb-4 md:w-1/2">
-              <label htmlFor="city">City</label>
+
+          <div className="w-full space-y-4">
+            {/* Country - fixed Nigeria */}
+            <div className="space-y-1.5">
+              <label htmlFor="country" className="block text-sm font-medium text-gray-700">
+                Country
+              </label>
+              <input
+                className={`w-full border rounded-lg px-4 py-3 text-base bg-gray-50 text-gray-600 cursor-not-allowed ${invalidCountryStyle}`}
+                name="country"
+                id="country"
+                disabled
+                value="Nigeria"
+              />
+            </div>
+
+            {/* State */}
+            <div className="space-y-1.5">
+              <label htmlFor="state" className="block text-sm font-medium text-gray-700">
+                State <span className="text-red-500">*</span>
+              </label>
               <select
-                className={`w-[96%] border border-black rounded-md p-3 placeholder:text-gray-300 text-md ${invalidCityStyle}`}
-                name="city"
-                id="city"
-                value={form.city}
-                onChange={handleChange}
+                className={`w-full border rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors ${invalidStateStyle}`}
+                id="state"
+                value={selectedState}
+                onChange={handleStateChange}
               >
-                <option selected>Select</option>
-                <option value="abuja">Abuja</option>
-                <option value="lagos">Lagos</option>
-                <option value="port harcourt">Portharcourt</option>
-                <option value="akwa-ibom">Akwa-ibom</option>
-                <option value="delta">Delta</option>
-                <option value="oyo">Oyo</option>
-                <option value="benin">Benin</option>
+                <option value="">Select your state</option>
+                {SOJOURN_OPERATIONAL_STATES.map((state) => (
+                  <option key={state} value={state}>
+                    {state}
+                  </option>
+                ))}
               </select>
             </div>
-            <div className="w-full space-y-2 mb-4 md:w-1/2">
-              <label htmlFor="street">Street</label>
+
+            {/* LGA */}
+            <div className="space-y-1.5">
+              <label htmlFor="lga" className="block text-sm font-medium text-gray-700">
+                Local Government Area (LGA) <span className="text-red-500">*</span>
+              </label>
+              <select
+                className={`w-full border rounded-lg px-4 py-3 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed ${invalidLgaStyle}`}
+                id="lga"
+                value={localLga}
+                onChange={handleLgaChange}
+                disabled={!selectedState}
+              >
+                <option value="">Select LGA</option>
+                {lgasForState.map((lga) => (
+                  <option key={lga} value={lga}>
+                    {lga}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Area / Neighbourhood */}
+            <div className="space-y-1.5">
+              <label htmlFor="area" className="block text-sm font-medium text-gray-700">
+                Area / Neighbourhood
+              </label>
               <input
-                className={`w-[96%] border border-black rounded-md p-3 placeholder:text-gray-300 text-md ${invalidStreetStyle}`}
+                className={`w-full border rounded-lg px-4 py-3 text-base placeholder:text-gray-400 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors ${invalidLgaStyle}`}
+                id="area"
+                value={localArea}
+                onChange={handleAreaChange}
+                placeholder="e.g. Lekki Phase 1, Victoria Island, Wuse II"
+              />
+            </div>
+
+            {/* Street / Road */}
+            <div className="space-y-1.5">
+              <label htmlFor="street" className="block text-sm font-medium text-gray-700">
+                Street / Road name <span className="text-red-500">*</span>
+              </label>
+              <input
+                className={`w-full border rounded-lg px-4 py-3 text-base placeholder:text-gray-400 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors ${invalidStreetStyle}`}
                 name="street"
                 id="street"
                 value={form.street}
                 onChange={handleChange}
-                placeholder="Enter the street name"
+                placeholder="e.g. Admiralty Way, Ogunlana Drive"
               />
             </div>
-          </div>
-          <div className="w-full flex items-center">
-            <div className="w-1/2 space-y-2 mb-4">
-              <label htmlFor="number">House Number</label>
+
+            {/* House / Plot number */}
+            <div className="space-y-1.5">
+              <label htmlFor="houseNumber" className="block text-sm font-medium text-gray-700">
+                House / Plot number <span className="text-red-500">*</span>
+              </label>
               <input
-                className={`w-[96%] border border-black rounded-md p-3 placeholder:text-gray-300 text-md ${invalidHouseNumberStyle}`}
+                className={`w-full border rounded-lg px-4 py-3 text-base placeholder:text-gray-400 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors ${invalidHouseNumberStyle}`}
                 name="houseNumber"
-                id="number"
+                id="houseNumber"
                 value={form.houseNumber ? form.houseNumber : ""}
                 onChange={handleChange}
                 type="number"
-                placeholder="Enter the house number"
-              />
-            </div>
-            <div className="w-1/2 space-y-2 mb-4">
-              <label htmlFor="zip">Area/Town</label>
-              <input
-                className={`w-[96%] border border-black rounded-md p-3  placeholder:text-gray-300 text-md ${invalidZipStyle}`}
-                name="zip"
-                id="zip"
-                value={form.zip}
-                onChange={handleChange}
-                placeholder="Enter the area/town"
+                min="1"
+                placeholder="e.g. 5, 12, 45"
               />
             </div>
           </div>
         </div>
       </div>
-      <div className="w-full bg-white fixed h-[60px] bottom-0 border-t border-t-gray-400 flex items-center justify-between px-5">
+      <div className="w-full bg-white fixed h-[60px] bottom-0 border-t border-gray-200 flex items-center justify-between px-5">
         <button
+          type="button"
           onClick={prev}
-          className="border-0 outline-none text-sm py-2 px-7 bg-white text-black font-semibold underline"
+          className="border-0 outline-none text-sm py-2 px-7 bg-white text-gray-700 font-semibold hover:text-black transition-colors"
         >
           Back
         </button>
-        <button className="border-0 outline-none text-sm py-2 px-7 flex items-center space-x-2 rounded-full bg-black text-white font-semibold ease duration-300 hover:bg-red-700">
-          <span> Next</span>
+        <button
+          type="submit"
+          className="text-sm py-2 px-7 flex items-center space-x-2 rounded-full bg-black text-white font-semibold hover:bg-gray-800 ease duration-300 transition-colors"
+        >
+          <span>Next</span>
           <MoveRight color="white" size={20} />
         </button>
       </div>
@@ -861,26 +1715,60 @@ export const InpsectionDateAndComments: FC<{
   const [createInspectionStatus, setCreateInspectionStatus] = useState(false);
 
   const [error, setError] = useState("");
-  const hostId = useSelector((state: RootState) => state.user.me?.host?.id);
+
+  // Prefer the Redux store (populated when nav bar is visible). If missing
+  // (create page hides nav so HamburgerButton never fetches /hosts/me), fall
+  // back to a direct API call so hostId is always available.
+  const hostIdFromStore = useSelector(
+    (state: RootState) => state.user.me?.host?.id as string | undefined
+  );
+  const { data: meData } = useQuery({
+    queryKey: ["me-create-listing"],
+    queryFn: () => me("hosts"),
+    enabled: !hostIdFromStore,
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
+  const hostId: string | undefined =
+    hostIdFromStore || meData?.host?.id || undefined;
 
   const mutation = useMutation({
     mutationFn: createInspection,
     onSuccess() {
+      setError("");
       setCreateInspectionStatus(true);
       setForm(defaultValues);
       setFormState("section-13");
     },
-    onError(error, variables, context) {
-      setError("Inspection Creation Failed.");
+    onError(error: unknown) {
+      let message = "Inspection creation failed. Please try again.";
+      if (error && typeof error === "object") {
+        const err = error as { response?: { data?: { message?: string | string[] } }; message?: string };
+        const msg = err.response?.data?.message;
+        if (Array.isArray(msg)) {
+          message = msg.join(". ");
+        } else if (typeof msg === "string") {
+          message = msg;
+        } else if (typeof err.message === "string" && err.message.includes("Network")) {
+          message = "Network error. Check your connection and try again.";
+        } else if (typeof err.message === "string" && err.message.toLowerCase().includes("s3")) {
+          message = "Photo upload failed. Please check your file sizes and try again.";
+        }
+      }
+      setError(message);
     },
   });
 
   const onSubmit = () => {
-    const errors = validateInspection(form);
-    if (errors.length) {
-      setError("Please Check the previous sections. Some fields are missing");
+    if (!hostId) {
+      setError("Please sign in as a host to create a listing. Refresh the page if you've already signed in.");
+      return;
+    }
+    const result = getInspectionValidationResult(form);
+    if (!result.isValid) {
+      setError(result.message);
     } else {
-      const { files, ...rest } = form;
+      const { files, panoramaFiles, rooms, sharedSpaceFiles, ...rest } = form;
       const keys = Object.keys(rest);
       const inspection = new FormData();
       inspection.append("hostId", hostId);
@@ -888,6 +1776,14 @@ export const InpsectionDateAndComments: FC<{
         const element = files[i];
         inspection.append("files", element);
       }
+      for (let i = 0; i < panoramaFiles.length; i++) {
+        const pano = panoramaFiles[i];
+        if (pano.file) {
+          inspection.append("panoramaFiles", pano.file);
+          inspection.append("panoramaLabels", pano.label);
+        }
+      }
+
       for (let key of keys) {
         //@ts-ignore
         let element = rest[key];
@@ -907,21 +1803,55 @@ export const InpsectionDateAndComments: FC<{
     <form
       onSubmit={(e: FormEvent) => {
         e.preventDefault();
+        setError("");
         const values = validateInspectionDateAndTime(form);
 
         if (Object.keys(values).length) {
           setFormValidation((prev) => ({ ...prev, ...values }));
+          setError(
+            "Please select an inspection date and time to continue."
+          );
           return;
-        } else {
-          onSubmit();
         }
+        onSubmit();
       }}
       className="w-full relative h-full overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
     >
-      <div className="fixed w-full bottom-[60px] flex items-center justify-center">
-        <span className="p-2 rounded-md text-red-500 font-semibold text-center md:text-left">
-          {error}
-        </span>
+      <div className="fixed w-full bottom-[60px] left-0 right-0 z-40 flex flex-col items-center justify-center gap-2 px-4 py-2 bg-white/95 backdrop-blur-sm border-t border-gray-100">
+        {error ? (
+          <>
+            <span className="p-2 rounded-md text-red-600 font-semibold text-center md:text-left text-sm">
+              {error}
+            </span>
+            {(() => {
+              const result = getInspectionValidationResult(form);
+              // Only show "Go to" for sections other than current (section-12)
+              const sectionsToFix = result.missingBySection.filter(
+                (s) => s.sectionId !== "section-12"
+              );
+              if (sectionsToFix.length > 0) {
+                return (
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {sectionsToFix.map(({ sectionId, sectionName }) => (
+                      <button
+                        key={sectionId}
+                        type="button"
+                        onClick={() => {
+                          setFormState(sectionId as FormStates);
+                          setError("");
+                        }}
+                        className="text-xs px-3 py-1.5 rounded-full bg-red-50 text-red-700 font-medium hover:bg-red-100 transition-colors border border-red-200"
+                      >
+                        Go to: {sectionName}
+                      </button>
+                    ))}
+                  </div>
+                );
+              }
+              return null;
+            })()}
+          </>
+        ) : null}
       </div>
       <div className="w-full flex flex-col items-center min-h-[100px] md:w-5/6 about-one max-w-[1400px] mx-auto">
         <div className="w-5/6 md:w-1/2 flex flex-col items-center">
@@ -1432,259 +2362,333 @@ export const Ammenities: FC<{
   );
 };
 
-const RULES = [
-  "No smoking",
-  "No pets",
-  "No candles or open fire",
-  "Unregistered vistors are not allowed",
-  "Damaged or Missing items will be charged",
+const RULES: { label: string; icon: string }[] = [
+  { label: "No smoking indoors", icon: "🚬" },
+  { label: "No pets allowed", icon: "🐾" },
+  { label: "No open fire or candles", icon: "🕯️" },
+  { label: "No unregistered visitors", icon: "🚷" },
+  { label: "Damaged items will be charged", icon: "🛠️" },
+  { label: "No loud music after 10 PM", icon: "🔇" },
+  { label: "No parties or events", icon: "🎉" },
+  { label: "No cooking of strong-smelling food", icon: "🍲" },
+  { label: "Generator usage hours apply", icon: "⚡" },
+  { label: "No use of AC after agreed hours", icon: "❄️" },
+  { label: "Waste must be disposed properly", icon: "🗑️" },
+  { label: "No overnight guests without notice", icon: "🌙" },
+  { label: "Keep common areas clean", icon: "🧹" },
+  { label: "No drying of clothes in common areas", icon: "👕" },
+  { label: "Quiet hours between 10 PM and 7 AM", icon: "😴" },
+  { label: "No use of personal hotplate or cooker", icon: "🍳" },
+  { label: "Gate must be locked at all times", icon: "🔒" },
+  { label: "No religious gatherings without notice", icon: "🙏" },
+  { label: "Water usage is metered", icon: "💧" },
+  { label: "No subletting without permission", icon: "📋" },
 ];
 
 export const HouseRules: FC<{
   form: CreateInspectionForm;
   setForm: Dispatch<SetStateAction<CreateInspectionForm>>;
   formValidation: CreateInspectionFormValidationType;
-  setFormValidation: Dispatch<
-    SetStateAction<CreateInspectionFormValidationType>
-  >;
+  setFormValidation: Dispatch<SetStateAction<CreateInspectionFormValidationType>>;
   next: () => void;
   prev: (e: MouseEvent<HTMLButtonElement>) => void;
 }> = ({ form, setForm, formValidation, setFormValidation, next, prev }) => {
-  const [rule, setRule] = useState("");
+  const [customRule, setCustomRule] = useState("");
 
-  const [preDefinedRules, setPredefinedRules] = useState<string[]>([]);
+  // ── helpers ──────────────────────────────────────────────────────────────
+  const toggleRule = (label: string) => {
+    setFormValidation((p) => ({ ...p, houseRules: false }));
+    setForm((p) => ({
+      ...p,
+      houseRules: p.houseRules.includes(label)
+        ? p.houseRules.filter((r) => r !== label)
+        : [...p.houseRules, label],
+    }));
+  };
 
-  const [showOthers, setShowOthers] = useState(false);
-  const handleRuleToggle =
-    (value: string) => (e: MouseEvent<HTMLDivElement>) => {
-      if (form.houseRules.includes(value)) {
-        const filtered = form.houseRules.filter(
-          (target: string) => target !== value
-        );
-        if (filtered.length === 0) {
-          setShowOthers(false);
-        }
-        setForm((prevState: CreateInspectionForm) => ({
-          ...prevState,
-          houseRules: filtered,
-        }));
-      } else {
-        setForm((prevState: CreateInspectionForm) => ({
-          ...prevState,
-          houseRules: [...prevState.houseRules, value],
-        }));
+  const addCustomRule = () => {
+    const trimmed = customRule.trim();
+    if (!trimmed || form.houseRules.includes(trimmed)) return;
+    setFormValidation((p) => ({ ...p, houseRules: false }));
+    setForm((p) => ({ ...p, houseRules: [...p.houseRules, trimmed] }));
+    setCustomRule("");
+  };
+
+  // ── AM/PM time picker helpers ─────────────────────────────────────────────
+  const parseTime = (val: string) => {
+    if (!val) return { h: "", m: "", period: "AM" };
+    const [hh, mm] = val.split(":");
+    const hour = parseInt(hh, 10);
+    return {
+      h: String(hour > 12 ? hour - 12 : hour === 0 ? 12 : hour).padStart(2, "0"),
+      m: mm ?? "00",
+      period: hour >= 12 ? "PM" : "AM",
+    };
+  };
+
+  const buildTime = (h: string, m: string, period: string) => {
+    let hour = parseInt(h, 10);
+    if (isNaN(hour)) return "";
+    if (period === "AM" && hour === 12) hour = 0;
+    if (period === "PM" && hour !== 12) hour += 12;
+    return `${String(hour).padStart(2, "0")}:${m}`;
+  };
+
+  const TimeInput = ({
+    name,
+    label,
+    icon,
+    value,
+    invalid,
+  }: {
+    name: "checkInAfter" | "checkOutBefore";
+    label: string;
+    icon: string;
+    value: string;
+    invalid: boolean;
+  }) => {
+    const { h, m, period } = parseTime(value);
+    const update = (newH: string, newM: string, newP: string) => {
+      const time = buildTime(newH || h, newM ?? m, newP || period);
+      if (time) {
+        setForm((p) => ({ ...p, [name]: time }));
+        setFormValidation((p) => ({ ...p, [name]: false }));
       }
     };
+    const hours = Array.from({ length: 12 }, (_, i) =>
+      String(i + 1).padStart(2, "0")
+    );
+    const minutes = ["00", "15", "30", "45"];
 
-  const handleRuleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setRule(e.target.value);
+    return (
+      <div className="flex-1 min-w-0">
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          <span className="mr-1">{icon}</span>
+          {label}
+        </label>
+        <div
+          className={`flex items-center gap-1 rounded-xl border bg-white px-3 py-2.5 shadow-sm ${
+            invalid ? "border-red-400" : "border-gray-200"
+          }`}
+        >
+          {/* Hour */}
+          <select
+            value={h}
+            onChange={(e) => update(e.target.value, m, period)}
+            className="flex-1 text-sm font-semibold text-gray-800 bg-transparent outline-none cursor-pointer"
+          >
+            <option value="">HH</option>
+            {hours.map((hv) => (
+              <option key={hv} value={hv}>{hv}</option>
+            ))}
+          </select>
+          <span className="text-gray-400 font-bold text-sm">:</span>
+          {/* Minute */}
+          <select
+            value={m}
+            onChange={(e) => update(h, e.target.value, period)}
+            className="flex-1 text-sm font-semibold text-gray-800 bg-transparent outline-none cursor-pointer"
+          >
+            <option value="">MM</option>
+            {minutes.map((mv) => (
+              <option key={mv} value={mv}>{mv}</option>
+            ))}
+          </select>
+          {/* AM / PM */}
+          <div className="flex rounded-lg overflow-hidden border border-gray-200 ml-1">
+            {["AM", "PM"].map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => update(h, m, p)}
+                className={`px-2.5 py-1 text-xs font-bold transition-colors ${
+                  period === p
+                    ? "bg-black text-white"
+                    : "bg-white text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   };
 
-  const setTime = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm((prevState: CreateInspectionForm) => ({
-      ...prevState,
-      [name]: value,
-    }));
-    setFormValidation((prev) => ({ ...prev, [name]: false }));
-  };
-
-  const handleEnterKey = (e: KeyboardEvent) => {
-    if (e.key === "Enter") {
-      if (form.houseRules.includes(rule.toLowerCase()) || !rule) return;
-      setFormValidation((prev) => ({ ...prev, houseRules: false }));
-      setForm((prevState: CreateInspectionForm) => ({
-        ...prevState,
-        houseRules: [...prevState.houseRules, rule],
-      }));
-      setRule("");
-    }
-  };
-
-  const addOther = (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    if (form.houseRules.includes(rule.toLowerCase()) || !rule) return;
-    setFormValidation((prev) => ({ ...prev, houseRules: false }));
-    setForm((prevState: CreateInspectionForm) => ({
-      ...prevState,
-      houseRules: [...prevState.houseRules, rule],
-    }));
-    setRule("");
-  };
-
-  const invalidCheckInStyle = formValidation.checkInAfter
-    ? "border-primary border-[2px]"
-    : "";
-  const invalidCheckOutStyle = formValidation.checkOutBefore
-    ? "border-primary border-[2px]"
-    : "";
-  const invalidHouseRulesStyle = formValidation.houseRules
-    ? "border-primary border-[2px]"
-    : "";
+  const presetLabels = RULES.map((r) => r.label);
+  const customRules = form.houseRules.filter((r) => !presetLabels.includes(r));
 
   return (
     <form
       onSubmit={(e: FormEvent) => {
         e.preventDefault();
-        const values = validateHouseRules(form);
-
-        if (Object.keys(values).length) {
-          setFormValidation((prev) => ({ ...prev, ...values }));
-          return;
+        const errors = validateHouseRules(form);
+        if (Object.keys(errors).length) {
+          setFormValidation((p) => ({ ...p, ...errors }));
         } else {
           next();
         }
       }}
-      className="w-full relative h-full overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
+      className="w-full min-h-screen bg-gray-50 pb-24 overflow-y-auto"
     >
-      <div className="w-full flex flex-col items-center min-h-[100px] md:w-5/6 about-one max-w-[1400px] mx-auto">
-        <h3 className="text-xl mb-5 text-center mb-2 md:text-3xl ">
-          What are the House rules?
-        </h3>
-        {showOthers ? (
-          ""
-        ) : (
-          <div className="w-5/6 md:w-4/6 lg:w-1/2">
-            <div className="w-full flex flex-col  md:flex-row md:items-center md:space-x-5">
-              <div className="w-full flex flex-col space-y-2 mb-4 md:w-1/2">
-                <label htmlFor="check-in-after">Check in after</label>
-                <div className="w-full flex  space">
-                  <input
-                    className={`w-[96%] border border-black rounded-md p-3 capitalize placeholder:text-gray-800 text-md ${invalidCheckInStyle}`}
-                    name="checkInAfter"
-                    id="check-in-after"
-                    type="time"
-                    onChange={setTime}
-                    value={form.checkInAfter}
-                    placeholder="Four bedroom semi detached duplex"
-                  />
-                </div>
-              </div>
-              <div className="w-full flex flex-col space-y-2 mb-4 md:w-1/2">
-                <label htmlFor="check-out-before">Check out before</label>
-                <div className="w-full flex">
-                  <input
-                    className={`w-[96%] border border-black rounded-md p-3 capitalize placeholder:text-gray-800 text-md ${invalidCheckOutStyle}`}
-                    name="checkOutBefore"
-                    id="check-out-before"
-                    type="time"
-                    onChange={setTime}
-                    value={form.checkOutBefore}
-                    placeholder="10:00am"
-                  />
-                </div>
-              </div>
+      <div className="max-w-[680px] mx-auto px-4 pt-8">
+
+        {/* ── Heading ── */}
+        <div className="mb-8">
+          <h3 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-1">
+            House rules
+          </h3>
+          <p className="text-sm text-gray-500">
+            Let guests know what's expected during their stay.
+          </p>
+        </div>
+
+        {/* ── Check-in / Check-out ── */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
+          <p className="text-sm font-semibold text-gray-700 mb-4">
+            🕐 Check-in &amp; Check-out times
+          </p>
+          <div className="flex gap-4 flex-wrap">
+            <TimeInput
+              name="checkInAfter"
+              label="Check-in after"
+              icon="🔑"
+              value={form.checkInAfter}
+              invalid={!!formValidation.checkInAfter}
+            />
+            <TimeInput
+              name="checkOutBefore"
+              label="Check-out before"
+              icon="🚪"
+              value={form.checkOutBefore}
+              invalid={!!formValidation.checkOutBefore}
+            />
+          </div>
+        </div>
+
+        {/* ── Preset rules ── */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-semibold text-gray-700">
+              📋 Select applicable rules
+            </p>
+            {form.houseRules.length > 0 && (
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-black text-white text-xs font-bold">
+                {form.houseRules.length}
+              </span>
+            )}
+          </div>
+
+          {formValidation.houseRules && (
+            <p className="text-xs text-red-500 font-medium mb-3">
+              Please select at least one house rule.
+            </p>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {RULES.map(({ label, icon }) => {
+              const selected = form.houseRules.includes(label);
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => toggleRule(label)}
+                  className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-150 ${
+                    selected
+                      ? "bg-black text-white border-black shadow-sm"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-gray-400 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="text-base leading-none flex-shrink-0">
+                    {selected ? "✓" : icon}
+                  </span>
+                  <span className="leading-snug">{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Custom rules ── */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
+          <p className="text-sm font-semibold text-gray-700 mb-3">
+            ✏️ Add a custom rule
+          </p>
+          <div className="flex gap-2">
+            <input
+              value={customRule}
+              onChange={(e) => setCustomRule(e.target.value)}
+              onKeyUp={(e) => e.key === "Enter" && addCustomRule()}
+              placeholder="e.g. No use of charcoal on the balcony"
+              className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-gray-400 transition-colors"
+            />
+            <button
+              type="button"
+              onClick={addCustomRule}
+              disabled={!customRule.trim()}
+              className="px-5 py-2.5 rounded-xl bg-black text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
+            >
+              Add
+            </button>
+          </div>
+
+          {/* Custom rule chips */}
+          {customRules.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {customRules.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => toggleRule(r)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 text-xs font-medium hover:bg-red-50 hover:text-red-600 transition-colors"
+                >
+                  <span>✏️ {r}</span>
+                  <X size={12} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Selected summary ── */}
+        {form.houseRules.length > 0 && (
+          <div className="bg-green-50 border border-green-100 rounded-2xl px-5 py-4 mb-2">
+            <p className="text-xs font-semibold text-green-700 mb-2">
+              ✅ {form.houseRules.length} rule{form.houseRules.length > 1 ? "s" : ""} selected
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {form.houseRules.map((r) => {
+                const preset = RULES.find((p) => p.label === r);
+                return (
+                  <span
+                    key={r}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white border border-green-200 text-xs text-gray-700"
+                  >
+                    {preset ? preset.icon : "✏️"} {r}
+                  </span>
+                );
+              })}
             </div>
           </div>
         )}
-        {form.houseRules.length ? (
-          <div className="w-5/6 md:w-4/6 lg:w-1/2 text-sm mb-4 text-black font-semibold">
-            Click on rule to remove it from the list.
-          </div>
-        ) : null}
-        {formValidation.houseRules ? (
-          <div className="w-5/6 md:w-4/6 lg:w-1/2 text-sm mb-4 text-primary font-semibold">
-            Please add at least one house rule
-          </div>
-        ) : null}
-
-        <div className="w-5/6 p-0 relative grid grid-cols-2 gap-4 md:w-4/6 lg:w-1/2">
-          {form.houseRules.length ? (
-            <div className="w-full col-span-2">
-              <span className="w-[30px] h-[30px] flex items-center justify-center bg-black font-semibold rounded-full text-white">
-                {form.houseRules.length}
-              </span>
-            </div>
-          ) : null}
-          {!showOthers
-            ? RULES.map((text: string, idx: number) => {
-                const isRuleSelected = form.houseRules.includes(text);
-                const selectedStyle = isRuleSelected
-                  ? "bg-black text-white"
-                  : "";
-                return (
-                  <div
-                    onClick={handleRuleToggle(text)}
-                    className={`w-full truncate cursor-pointer py-2 px-4 text-xs rounded-full border border-gray-300 hover:bg-gray-100 ${selectedStyle}`}
-                    key={idx}
-                  >
-                    {text}
-                  </div>
-                );
-              })
-            : null}
-          {form.houseRules
-            .filter((v) => !RULES.includes(v))
-            .map((text: string, idx: number) => {
-              if (idx >= 1 && !showOthers) return;
-              return (
-                <div
-                  onClick={handleRuleToggle(text)}
-                  className="w-full truncate cursor-pointer py-2 px-4 text-xs rounded-full border border-gray-300 hover:bg-gray-100"
-                  key={idx}
-                >
-                  {text}
-                </div>
-              );
-            })}
-          {form.houseRules.length &&
-          form.houseRules.length > 6 &&
-          !showOthers ? (
-            <div
-              onClick={() => {
-                setShowOthers(true);
-              }}
-              className="w-full cursor-pointer md:col-span-2 underline flex items-end font-semibold"
-            >
-              <span>+{form.houseRules.length - 6} more...(click to view)</span>
-            </div>
-          ) : null}
-          {form.houseRules.length && showOthers ? (
-            <div
-              onClick={() => {
-                setShowOthers(false);
-              }}
-              className="w-full cursor-pointer md:col-span-2 underline flex items-end font-semibold"
-            >
-              <span>Back to full view</span>
-            </div>
-          ) : (
-            ""
-          )}
-        </div>
-        <div className="w-5/6 flex flex-col justify-center md:w-4/6 lg:w-1/2">
-          <label htmlFor="others" className="mt-4">
-            Add your house rules.
-          </label>
-          <div className="w-full space-y-4 flex justify-center flex-col  mt-2 md:flex-row md:space-y-0">
-            <input
-              onKeyUp={handleEnterKey}
-              onChange={handleRuleChange}
-              id="others"
-              name="others"
-              placeholder="Can't find a specific house rule? type it here..."
-              value={rule}
-              className="py-3 px-5 w-full text-md font-[500] rounded-tl-full rounded-bl-full rounded-tr-full rounded-br-full border border-black box-border md:w-4/6  md:rounded-tr-none md:rounded-br-none"
-            />
-            <button
-              onClick={addOther}
-              className="bg-black p-[13px] w-full text-white rounded-tr-full rounded-br-full rounded-tl-full rounded-bl-full font-semibold border-0 box-border md:rounded-tl-none md:rounded-bl-none md:w-2/6"
-            >
-              Add rule
-            </button>
-          </div>
-        </div>
       </div>
-      <div className="w-full fixed bg-white h-[60px] bottom-0 border-t border-t-gray-400 flex items-center justify-between px-5">
+
+      {/* ── Footer ── */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 h-[60px] flex items-center justify-between px-5 z-30">
         <button
+          type="button"
           onClick={prev}
-          className="border-0 outline-none text-sm py-2 px-7 bg-white text-black font-semibold underline"
+          className="text-sm py-2 px-6 text-gray-700 font-semibold hover:text-black underline transition-colors"
         >
           Back
         </button>
-        <button className="border-0 outline-none text-sm py-2 px-7 flex items-center space-x-2 rounded-full bg-black text-white font-semibold ease duration-300 hover:bg-red-700">
-          <span> Next</span>
-          <MoveRight color="white" size={20} />
+        <button
+          type="submit"
+          className="text-sm py-2 px-7 flex items-center gap-2 rounded-full bg-black text-white font-semibold hover:bg-gray-800 transition-colors"
+        >
+          <span>Next</span>
+          <MoveRight color="white" size={18} />
         </button>
       </div>
     </form>
@@ -1701,172 +2705,314 @@ export const PriceCalculator: FC<{
   next: () => void;
   prev: (e: MouseEvent<HTMLButtonElement>) => void;
 }> = ({ form, setForm, formValidation, setFormValidation, next, prev }) => {
-  const [animPrice, setAnimPricing] = useState(() => form.price);
+  const isTownHouse = form.typeOfProperty === "town-house";
 
-  const [animation, showAnimation] = useState(false);
+  const [openCaution, setOpenCaution] = useState(form.cautionFee > 0);
 
-  const [openSwitch, setOpenSwitch] = useState(false);
-
-  const animCss = animation ? "" : "hidden";
-
-  const guestServiceFee = (10 / 100) * form.price;
-
-  const youEarn = form.price - (2 / 100) * form.price;
-
-  useEffect(() => {
-    if (animPrice > 0) {
+  const handleNumberInput = (field: string, value: string) => {
+    const num = +value.replace(/,/g, "");
+    if (isNaN(num)) return;
+    setForm((prev) => ({ ...prev, [field]: num }));
+    if (field === "price" || field === "monthlyPrice") {
       setFormValidation((prev) => ({ ...prev, price: false }));
-      showAnimation(true);
-      let timeout = setTimeout(() => {
-        showAnimation(false);
-        setForm((prevState: CreateInspectionForm) => ({
-          ...prevState,
-          price: animPrice,
-        }));
-      }, 500);
-      return () => {
-        clearTimeout(timeout);
-      };
-    } else if (animPrice <= 0) {
-      showAnimation(false);
-      setForm((prevState: CreateInspectionForm) => ({
-        ...prevState,
-        price: 0,
-      }));
-    } else {
-      return;
     }
-  }, [animPrice]);
+  };
+
+  const displayPrice = isTownHouse ? form.monthlyPrice : form.price;
+  const guestServiceFee = (10 / 100) * displayPrice;
+  // Host keeps 100% of room price
+  const youEarn = displayPrice;
 
   return (
     <form
       onSubmit={(e: FormEvent) => {
         e.preventDefault();
-        const values = validatePrice(form);
-
-        if (Object.keys(values).length) {
-          setFormValidation((prev) => ({ ...prev, ...values }));
-          return;
+        if (isTownHouse) {
+          if (!form.monthlyPrice || form.monthlyPrice <= 0) {
+            setFormValidation((prev) => ({ ...prev, price: true }));
+            return;
+          }
         } else {
-          next();
+          const values = validatePrice(form);
+          if (Object.keys(values).length) {
+            setFormValidation((prev) => ({ ...prev, ...values }));
+            return;
+          }
         }
+        next();
       }}
-      className="w-full relative h-full overflow-y-auto flex items-center justify-center max-w-[1400px] mx-auto"
+      className="w-full relative h-full overflow-y-auto"
     >
-      <div className="w-full flex flex-col items-center min-h-[100px] md:w-5/6 about-one max-w-[1400px] mx-auto">
-        <h3 className="text-xl mb-5 text-center md:text-3xl ">Pricing.</h3>
-        <p className="text-md mb-2 text-center md:text-md ">
-          Type the amount below.
-        </p>
-        {formValidation.price ? (
-          <span className="text-primary font-semibold">
-            Please enter an amount
-          </span>
-        ) : null}
-        <div className="w-5/6 flex items-center justify-center md:w-4/6 lg:w-1/2">
-          <div className="w-full flex items-center justify-center">
-            <label className="text-[40px] font-bold">₦</label>
-            <input
-              className="w-[220px] py-4 text-[40px] font-bold border-0 outline-none"
-              placeholder="35000"
-              name="price"
-              onChange={(e) => {
-                if (isNaN(+e.target.value.split(",").join(""))) return;
-                setAnimPricing(+e.target.value.split(",").join(""));
-              }}
-              value={animPrice.toLocaleString()}
-            />
-            <span className="font-semibold">/night</span>
-          </div>
+      <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-14 pb-28">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight">
+            Set your pricing
+          </h2>
+          <p className="mt-2 text-sm sm:text-base text-gray-500 max-w-md mx-auto">
+            {isTownHouse
+              ? "Town House properties are billed monthly. Set your monthly rate and stay duration."
+              : "Set the nightly rate guests will pay for your property."}
+          </p>
+          {formValidation.price && (
+            <p className="mt-3 text-sm font-semibold text-primary">
+              Please enter a valid price
+            </p>
+          )}
         </div>
-        <div className="w-5/6 flex items-center justify-center md:w-4/5 lg:w-1/2">
-          <div className="rounded-md shadow-md w-[300px] h-[220px] p-2 relative">
-            <svg
-              height="100%"
-              className="absolute top-0 left-0 bg-transparent"
-              width="100%"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect
-                rx="8"
-                ry="8"
-                className={`line ${animCss}`}
-                height="100%"
-                width="100%"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <ul className="overflow-hidden w-full p-0">
-              <li className="w-full p-2 font-semibold text-sm flex items-center justify-between">
-                <span className="font-semibold">Base price</span>
-                <span className="font-semibold">
-                  ₦{form.price.toLocaleString()}
-                </span>
-              </li>
-              <li className="w-full font-semibold p-2 text-sm flex items-center justify-between">
-                <span className="font-semibold">Guest service fee</span>
-                <span className="font-semibold">
-                  ₦{guestServiceFee.toLocaleString()}
-                </span>
-              </li>
-              <li className="w-full font-semibold p-2 text-sm flex items-center justify-between">
-                <div className="flex space-x-1">
-                  <span className="font-semibold">Caution fee</span>
-                  <Switch
-                    id="caution-fee"
-                    checked={openSwitch}
-                    onCheckedChange={(checked) => {
-                      setOpenSwitch(checked);
-                    }}
-                    className="isolate"
-                  />
-                </div>
-                {openSwitch ? (
-                  <input
-                    name="cautionFee"
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      setForm((prevState: CreateInspectionForm) => ({
-                        ...prevState,
-                        cautionFee: +e.target.value,
-                      }));
-                    }}
-                    value={form.cautionFee}
-                    className="px-1 py-1 isolate outline-none border border-black rounded-md w-[80px] text-md"
-                  />
-                ) : null}
-              </li>
 
-              <li className="w-full font-semibold py-2 px-2 text-sm flex items-center justify-between mt-3 border-t-[1.5px] border-t-gray-300">
-                <span className="font-semibold"> Guest price before taxes</span>
-                <span className="font-semibold">
-                  ₦
-                  {(
-                    guestServiceFee +
-                    form.price +
-                    form.cautionFee
-                  ).toLocaleString()}
-                </span>
-              </li>
-              <li className="w-full py-2 px-2 font-semibold text-sm flex items-center justify-between">
-                <span className="font-semibold"> You earn</span>
-                <span className="font-semibold">
-                  ₦{youEarn.toLocaleString()}
-                </span>
-              </li>
-            </ul>
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm mb-5">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              {isTownHouse ? "Monthly price" : "Price per night"}
+            </label>
+            <div className="flex items-center gap-1">
+              <span className="text-3xl sm:text-4xl font-bold text-gray-900">₦</span>
+              <input
+                className="flex-1 text-3xl sm:text-4xl font-bold border-0 outline-none bg-transparent"
+                placeholder={isTownHouse ? "250000" : "35000"}
+                onChange={(e) =>
+                  handleNumberInput(
+                    isTownHouse ? "monthlyPrice" : "price",
+                    e.target.value
+                  )
+                }
+                value={
+                  (isTownHouse ? form.monthlyPrice : form.price) > 0
+                    ? (isTownHouse ? form.monthlyPrice : form.price).toLocaleString()
+                    : ""
+                }
+              />
+              <span className="text-sm font-semibold text-gray-400">
+                /{isTownHouse ? "month" : "night"}
+              </span>
+            </div>
           </div>
+
+        {/* Town House: stay duration range */}
+        {isTownHouse && (
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm mb-5">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-base font-bold text-gray-900">
+                Stay duration range
+              </h3>
+              <span className="group relative">
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 rounded-lg bg-gray-900 text-white text-xs p-2.5 leading-relaxed opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-10">
+                  Guests can only book within this range. Minimum 3 months, maximum 6 months.
+                </span>
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Set the minimum and maximum months a guest can book (3–6 months).
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  Minimum (months)
+                </label>
+                <select
+                  value={form.minStayMonths}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      minStayMonths: +e.target.value,
+                      maxStayMonths: Math.max(+e.target.value, prev.maxStayMonths),
+                    }))
+                  }
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm font-semibold focus:border-gray-400 focus:outline-none"
+                >
+                  {[3, 4, 5, 6].map((m) => (
+                    <option key={m} value={m}>
+                      {m} months
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  Maximum (months)
+                </label>
+                <select
+                  value={form.maxStayMonths}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      maxStayMonths: +e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm font-semibold focus:border-gray-400 focus:outline-none"
+                >
+                  {[3, 4, 5, 6]
+                    .filter((m) => m >= form.minStayMonths)
+                    .map((m) => (
+                      <option key={m} value={m}>
+                        {m} months
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Caution fee — shown for all types */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm mb-5">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-base font-bold text-gray-900">
+              Caution fee
+            </h3>
+            <span className="group relative">
+              <Info className="w-4 h-4 text-gray-400 cursor-help" />
+              <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-60 rounded-lg bg-gray-900 text-white text-xs p-2.5 leading-relaxed opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-10">
+                A refundable deposit charged to guests to protect against potential damages during their stay.
+              </span>
+            </span>
+            <div className="ml-auto">
+              <Switch
+                id="caution-fee"
+                checked={openCaution}
+                onCheckedChange={(checked) => {
+                  setOpenCaution(checked);
+                  if (!checked)
+                    setForm((prev) => ({ ...prev, cautionFee: 0 }));
+                }}
+                className="isolate"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 mb-4">
+            This refundable fee protects your property against damages. It is returned to the guest after checkout.
+          </p>
+          {openCaution && (
+            <div className="flex items-center gap-1">
+              <span className="text-2xl font-bold text-gray-900">₦</span>
+              <input
+                type="text"
+                value={form.cautionFee > 0 ? form.cautionFee.toLocaleString() : ""}
+                onChange={(e) => {
+                  const num = +e.target.value.replace(/,/g, "");
+                  if (isNaN(num)) return;
+                  setForm((prev) => ({ ...prev, cautionFee: num }));
+                }}
+                placeholder="10000"
+                className="flex-1 text-2xl font-bold border-0 outline-none bg-transparent"
+              />
+              <span className="text-xs font-semibold text-gray-400">refundable</span>
+            </div>
+          )}
+        </div>
+
+        {/* Long-stay discount (non-town-house) */}
+        {!isTownHouse && (
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm mb-5">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-base font-bold text-gray-900">
+                Long-stay discount
+              </h3>
+              <span className="group relative">
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 rounded-lg bg-gray-900 text-white text-xs p-2.5 leading-relaxed opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-10">
+                  Attract long-term guests by offering a discount on stays of 7 days or more. This is applied automatically.
+                </span>
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Guests who book for 7 or more days automatically receive this discount.
+            </p>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min={0}
+                max={50}
+                value={form.longStayDiscountPercent}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    longStayDiscountPercent: Math.min(50, Math.max(0, +e.target.value)),
+                  }))
+                }
+                className="w-20 rounded-lg border border-gray-200 px-3 py-2 text-center text-lg font-bold focus:border-gray-400 focus:outline-none"
+              />
+              <span className="text-sm font-semibold text-gray-500">% off</span>
+              <span className="text-xs text-gray-400 ml-auto">for stays of 7+ days</span>
+            </div>
+          </div>
+        )}
+
+        {/* Price breakdown card */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-base font-bold text-gray-900">Price breakdown</h3>
+            <span className="group relative">
+              <Info className="w-4 h-4 text-gray-400 cursor-help" />
+              <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 rounded-lg bg-gray-900 text-white text-xs p-2.5 leading-relaxed opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-10">
+                This shows what guests pay and what you earn after platform fees.
+              </span>
+            </span>
+          </div>
+          <ul className="space-y-3 text-sm">
+            <li className="flex items-center justify-between">
+              <span className="text-gray-600">
+                {isTownHouse
+                  ? "Base monthly price"
+                  : "Base nightly price"}
+              </span>
+              <span className="font-semibold">
+                ₦{displayPrice.toLocaleString()}
+              </span>
+            </li>
+            <li className="flex items-center justify-between">
+              <span className="text-gray-600">Service fee (10%)</span>
+              <span className="font-semibold">
+                ₦{Math.round(guestServiceFee).toLocaleString()}
+              </span>
+            </li>
+            {form.cautionFee > 0 && (
+              <li className="flex items-center justify-between">
+                <span className="text-gray-600">Caution fee (refundable)</span>
+                <span className="font-semibold">
+                  ₦{form.cautionFee.toLocaleString()}
+                </span>
+              </li>
+            )}
+            {!isTownHouse && form.longStayDiscountPercent > 0 && (
+              <li className="flex items-center justify-between text-emerald-600">
+                <span>Long-stay discount ({form.longStayDiscountPercent}%)</span>
+                <span className="font-semibold">Applied on 7+ day bookings</span>
+              </li>
+            )}
+            <li className="flex items-center justify-between pt-3 border-t border-gray-100">
+              <span className="font-bold text-gray-900">Guest pays</span>
+              <span className="font-bold text-gray-900">
+                ₦{(displayPrice + Math.round(guestServiceFee) + form.cautionFee).toLocaleString()}
+                <span className="text-xs font-normal text-gray-400 ml-1">
+                  /{isTownHouse ? "month" : "night"}
+                </span>
+              </span>
+            </li>
+            <li className="flex items-center justify-between">
+              <span className="font-bold text-gray-900">You earn</span>
+              <span className="font-bold text-emerald-600">
+                ₦{Math.round(youEarn).toLocaleString()}
+                <span className="text-xs font-normal text-gray-400 ml-1">
+                  /{isTownHouse ? "month" : "night"}
+                </span>
+              </span>
+            </li>
+          </ul>
         </div>
       </div>
-      <div className="w-full bg-white fixed h-[60px] bottom-0 border-t border-t-gray-400 flex items-center justify-between px-5">
+
+      {/* Bottom bar */}
+      <div className="fixed bg-white w-full h-[60px] bottom-0 border-t border-t-gray-200 flex items-center justify-between px-5 z-30">
         <button
           onClick={prev}
           className="border-0 outline-none text-sm py-2 px-7 bg-white text-black font-semibold underline"
         >
           Back
         </button>
-        <button className="border-0 outline-none text-sm py-2 px-7 flex items-center space-x-2 rounded-full bg-black text-white font-semibold ease duration-300 hover:bg-red-700">
-          <span> Next</span>
-          <MoveRight color="white" size={20} />
+        <button className="border-0 outline-none text-sm py-2.5 px-8 flex items-center space-x-2 rounded-full bg-gray-900 text-white font-semibold ease duration-300 hover:bg-gray-800 shadow-md">
+          <span>Next</span>
+          <MoveRight color="white" size={18} />
         </button>
       </div>
     </form>

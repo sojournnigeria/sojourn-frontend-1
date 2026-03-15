@@ -8,35 +8,193 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function validateInspection(data: any) {
-  const errors = [];
-  const keys = Object.keys(data);
+/** Human-readable labels for form fields */
+const FIELD_LABELS: Record<string, string> = {
+  typeOfProperty: "Property type",
+  title: "Property title",
+  numberOfRooms: "Number of rooms",
+  maxNumberOfPeople: "Max guests",
+  description: "Description",
+  files: "Property photos (min. 3)",
+  country: "Country",
+  city: "City",
+  street: "Street",
+  houseNumber: "House number",
+  zip: "ZIP/Postal code",
+  lat: "Map location",
+  lng: "Map location",
+  nearbyPlaces: "What's nearby",
+  ammenities: "Amenities",
+  houseRules: "House rules",
+  checkInAfter: "Check-in time",
+  checkOutBefore: "Check-out time",
+  price: "Nightly price",
+  contactName: "Contact name",
+  contactEmail: "Contact email",
+  contactPhoneNumber: "Contact phone",
+  inspectionDate: "Inspection date",
+  inspectionTime: "Inspection time",
+  rooms: "Room details",
+};
 
-  for (let key of keys) {
-    const value = data[key];
-    if (
-      typeof value === "string" &&
-      typeof value === "number" &&
-      !value &&
-      key !== "cautionFee"
-    ) {
-      const error = `please fill in ${key}.`;
-      errors.push(error);
-    } else if (typeof value === "object" && Array.isArray(value)) {
-      if (!(value as Array<any>).length) {
-        if (key !== "houseRules") {
-          const error = `please select one of ${key}. `;
-          errors.push(error);
-        }
-      }
-    } else {
-      if (!value && key !== "cautionFee") {
-        const error = `please fill in ${key}.`;
-        errors.push(error);
-      }
+/** Section IDs and names for navigation */
+export const INSPECTION_SECTIONS: Record<string, { id: string; name: string }> =
+  {
+    "section-1": { id: "section-1", name: "Get started" },
+    "section-2": { id: "section-2", name: "Property type" },
+    "section-3": { id: "section-3", name: "Describe your place" },
+    "section-4": { id: "section-4", name: "Add photos" },
+    "section-5": { id: "section-5", name: "Property address" },
+    "section-6": { id: "section-6", name: "Set location on map" },
+    "section-7": { id: "section-7", name: "What's nearby" },
+    "section-8": { id: "section-8", name: "Amenities" },
+    "section-9": { id: "section-9", name: "House rules" },
+    "section-10": { id: "section-10", name: "Set your price" },
+    "section-11": { id: "section-11", name: "Contact information" },
+    "section-12": { id: "section-12", name: "Schedule inspection" },
+    "section-13": { id: "section-13", name: "Success" },
+  };
+
+/** Ordered section IDs for progress (steps 1–12, excluding success) */
+export const INSPECTION_SECTION_ORDER = [
+  "section-1",
+  "section-2",
+  "section-3",
+  "section-4",
+  "section-5",
+  "section-6",
+  "section-7",
+  "section-8",
+  "section-9",
+  "section-10",
+  "section-11",
+  "section-12",
+] as const;
+
+export function getInspectionProgress(currentFormState: string): {
+  step: number;
+  total: number;
+  label: string;
+} {
+  const idx = INSPECTION_SECTION_ORDER.indexOf(
+    currentFormState as (typeof INSPECTION_SECTION_ORDER)[number]
+  );
+  const step = idx >= 0 ? idx + 1 : 1;
+  const total = INSPECTION_SECTION_ORDER.length;
+  const label = INSPECTION_SECTIONS[currentFormState]?.name ?? "Create listing";
+  return { step, total, label };
+}
+
+/** Maps form fields to their section */
+const FIELD_TO_SECTION: Record<string, string> = {
+  typeOfProperty: "section-2",
+  title: "section-3",
+  numberOfRooms: "section-3",
+  maxNumberOfPeople: "section-3",
+  description: "section-3",
+  files: "section-4",
+  country: "section-5",
+  city: "section-5",
+  street: "section-5",
+  houseNumber: "section-5",
+  zip: "section-5",
+  lat: "section-6",
+  lng: "section-6",
+  nearbyPlaces: "section-7",
+  ammenities: "section-8",
+  houseRules: "section-9",
+  checkInAfter: "section-9",
+  checkOutBefore: "section-9",
+  price: "section-10",
+  contactName: "section-11",
+  contactEmail: "section-11",
+  contactPhoneNumber: "section-11",
+  inspectionDate: "section-12",
+  inspectionTime: "section-12",
+  rooms: "section-4",
+};
+
+export interface ValidationResult {
+  isValid: boolean;
+  missingBySection: { sectionId: string; sectionName: string; fields: string[] }[];
+  message: string;
+}
+
+/** Runs all section validators and returns which sections/fields are missing */
+export function getInspectionValidationResult(
+  form: Partial<CreateInspectionForm>
+): ValidationResult {
+  const allErrors: { [key: string]: boolean } = {};
+  Object.assign(
+    allErrors,
+    validateTypeOfProperty(form),
+    validateBasicPropertyDetailsSection(form),
+    validateNumberOfPictures(form),
+    validatePropertyLocationDetails(form),
+    validateWhatIsNear(form),
+    validateAmmenities(form),
+    validateHouseRules(form),
+    validatePrice(form),
+    validateContactInfo(form),
+    validateInspectionDateAndTime(form)
+  );
+
+  // Lat/lng from map
+  if (!form.lat?.trim()) allErrors["lat"] = true;
+  if (!form.lng?.trim()) allErrors["lng"] = true;
+
+  const missingKeys = Object.keys(allErrors).filter((k) => allErrors[k]);
+  if (missingKeys.length === 0) {
+    return { isValid: true, missingBySection: [], message: "" };
+  }
+
+  // Group by section
+  const sectionMap = new Map<
+    string,
+    { sectionName: string; fields: string[] }
+  >();
+  for (const key of missingKeys) {
+    const sectionId = FIELD_TO_SECTION[key] || "section-3";
+    const sectionInfo = INSPECTION_SECTIONS[sectionId];
+    const label = FIELD_LABELS[key] || key;
+    if (!sectionMap.has(sectionId)) {
+      sectionMap.set(sectionId, {
+        sectionName: sectionInfo?.name ?? sectionId,
+        fields: [],
+      });
+    }
+    const entry = sectionMap.get(sectionId)!;
+    if (!entry.fields.includes(label)) {
+      entry.fields.push(label);
     }
   }
-  return errors;
+
+  const missingBySection = Array.from(sectionMap.entries()).map(
+    ([sectionId, { sectionName, fields }]) => ({
+      sectionId,
+      sectionName,
+      fields,
+    })
+  );
+
+  const sectionList = missingBySection
+    .map((s) => `"${s.sectionName}" (${s.fields.join(", ")})`)
+    .join("; ");
+  const message = `Complete the following sections: ${sectionList}. Use "Back" to fix them.`;
+
+  return {
+    isValid: false,
+    missingBySection,
+    message,
+  };
+}
+
+export function validateInspection(data: any): string[] {
+  const result = getInspectionValidationResult(data as CreateInspectionForm);
+  if (result.isValid) return [];
+  return result.missingBySection.flatMap((s) =>
+    s.fields.map((f) => `${s.sectionName}: ${f}`)
+  );
 }
 
 export function numberOfNights(from: Date, to: Date) {
@@ -119,10 +277,10 @@ export const validateNumberOfPictures = (
   values: Partial<CreateInspectionForm>
 ) => {
   const keys: { [key: string]: boolean } = {};
-  if ((values.files as File[]).length < 3) {
+  const files = (values.files as File[] | undefined) ?? [];
+  if (files.length < 3) {
     keys["files"] = true;
   }
-
   return keys;
 };
 
@@ -234,12 +392,29 @@ export const validateInspectionDateAndTime = (
   return keys;
 };
 
+export interface PanoramaFileEntry {
+  id: string;
+  label: string;
+  file?: File;
+  previewUrl: string;
+}
+
+export interface RoomFormEntry {
+  id: string;
+  name: string;
+  photos: File[];
+  bathroomType: "ensuite" | "shared";
+  capacity: number;
+  price: number;
+}
+
 export interface CreateInspectionForm {
   title: string;
   numberOfRooms: number;
   maxNumberOfPeople: number;
   description: string;
   files: File[];
+  panoramaFiles: PanoramaFileEntry[];
   typeOfProperty: PropertyTypes;
   country: string;
   city: string;
@@ -260,6 +435,12 @@ export interface CreateInspectionForm {
   inspectionDate: Date | null;
   inspectionTime: string;
   cautionFee: number;
+  rooms: RoomFormEntry[];
+  sharedSpaceFiles: File[];
+  monthlyPrice: number;
+  minStayMonths: number;
+  maxStayMonths: number;
+  longStayDiscountPercent: number;
 }
 
 export interface CreateInspectionFormValidationType {
@@ -268,6 +449,7 @@ export interface CreateInspectionFormValidationType {
   maxNumberOfPeople: boolean;
   description: boolean;
   files: boolean;
+  panoramaFiles: boolean;
   typeOfProperty: boolean;
   country: boolean;
   city: boolean;
@@ -288,6 +470,8 @@ export interface CreateInspectionFormValidationType {
   inspectionDate: boolean;
   inspectionTime: boolean;
   cautionFee: boolean;
+  rooms: boolean;
+  sharedSpaceFiles: boolean;
 }
 
 export const defaultValues = {
@@ -296,6 +480,7 @@ export const defaultValues = {
   maxNumberOfPeople: 0,
   description: "",
   files: [],
+  panoramaFiles: [] as PanoramaFileEntry[],
   typeOfProperty: "" as PropertyTypes,
   lat: "",
   lng: "",
@@ -316,6 +501,12 @@ export const defaultValues = {
   inspectionDate: null,
   inspectionTime: "",
   cautionFee: 0,
+  rooms: [] as RoomFormEntry[],
+  sharedSpaceFiles: [] as File[],
+  monthlyPrice: 0,
+  minStayMonths: 3,
+  maxStayMonths: 6,
+  longStayDiscountPercent: 5,
 };
 
 export const defaultValidationValues = {
@@ -324,6 +515,7 @@ export const defaultValidationValues = {
   maxNumberOfPeople: false,
   description: false,
   files: false,
+  panoramaFiles: false,
   typeOfProperty: false,
   lat: false,
   lng: false,
@@ -344,4 +536,6 @@ export const defaultValidationValues = {
   inspectionDate: false,
   inspectionTime: false,
   cautionFee: false,
+  rooms: false,
+  sharedSpaceFiles: false,
 };
