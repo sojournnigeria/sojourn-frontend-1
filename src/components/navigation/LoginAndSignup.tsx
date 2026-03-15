@@ -638,9 +638,16 @@ export default function LoginSignupModal() {
                 Reset
               </Link>
             </p>
-            <button className="w-full p-3 bg-primary text-white rounded-full font-bold hover:bg-red-800 transition">
-              {loginPending ? <Spinner /> : loginFails ? "Login" : <Spinner />}
-            </button>
+           <button
+  type="submit"
+  className="w-full p-3 bg-primary text-white rounded-full font-bold hover:bg-red-800 transition flex items-center justify-center"
+>
+  {loginPending || loginFails === false ? (
+    <Spinner size={24} /> // spinner stays centered
+  ) : (
+    "Login"
+  )}
+</button>
             <button
               type="button"
               onClick={(e) => {
@@ -706,9 +713,16 @@ export default function LoginSignupModal() {
                 {showSignupPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            <button className="w-full p-3 bg-primary text-white rounded-full font-bold hover:bg-red-800 transition">
-              {signupPending ? <Spinner /> : signupFails ? "Signup" : <Spinner />}
-            </button>
+           <button
+  type="submit"
+  className="w-full p-3 bg-primary text-white rounded-full font-bold hover:bg-red-800 transition flex items-center justify-center"
+>
+  {signupPending || signupFails === false ? (
+    <Spinner size={24} />
+  ) : (
+    "Signup"
+  )}
+</button>
             <button
               type="button"
               onClick={(e) => {
