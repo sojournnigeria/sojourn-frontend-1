@@ -10,6 +10,7 @@ import Notification from "../notification/notification";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useNotification } from "../notification/notification-provider";
+import SlideNotification from "../notification/SlideNotification";
 
 const MobileListMenuComponent = dynamic(() => import("./MobileListMenu"));
 const Menu = () => {
@@ -57,7 +58,8 @@ const Menu = () => {
     <div className="w-full fixed bg-primary top-0 left-0 z-[9999] font-sans"> 
     {isOnline === "not-connected" ? <NetworkBanner /> : null}
       {!isUserProfileComplete && isNotProiflePage && isLoggedIn ? (
-        <Notification message={message} />
+        // <Notification message={message} />
+        <SlideNotification url={url} />
       ) : null}
       <MenuSSR />
       <MobileListMenuComponent />
