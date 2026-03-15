@@ -1616,6 +1616,11 @@ export const ContactInformation: FC<{
   next: () => void;
   prev: (e: MouseEvent<HTMLButtonElement>) => void;
 }> = ({ form, setForm, setFormValidation, formValidation, prev, next }) => {
+   console.log("ContactInformation mounted");
+  console.log("form values:", form);
+  console.log("formValidation:", formValidation);
+  console.log("next function:", next);
+  console.log("prev function:", prev);
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prevState: CreateInspectionForm) => ({
@@ -1644,7 +1649,13 @@ export const ContactInformation: FC<{
     <form
       onSubmit={(e: FormEvent) => {
         e.preventDefault();
+        console.log("ContactInformation submit fired");
+    console.log("form at submit:", form);
+    
+
         const values = validateContactInfo(form);
+
+    console.log("validateContactInfo result:", values);
 
         if (Object.keys(values).length) {
           setFormValidation((prev) => ({ ...prev, ...values }));
