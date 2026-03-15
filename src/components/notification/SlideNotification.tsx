@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
@@ -10,24 +10,21 @@ export default function SlideNotification({ url }: { url: string }) {
 
   const isLoggedIn = useSelector((state: RootState) => state.user.loggedIn);
 
+  const prevLoginState = useRef(isLoggedIn);
+
   useEffect(() => {
-    if (isLoggedIn) {
-      const alreadyShown = sessionStorage.getItem("profileReminderShown");
+    // Detect login event (false -> true)
+    if (!prevLoginState.current && isLoggedIn) {
+      setShow(true);
 
-      if (!alreadyShown) {
-        setShow(true);
-        sessionStorage.setItem("profileReminderShown", "true");
+      const timer = setTimeout(() => {
+        setShow(false);
+      }, 4000);
 
-        const timer = setTimeout(() => {
-          setShow(false);
-        }, 4000);
-
-        return () => clearTimeout(timer);
-      }
-    } else {
-      // Reset when user logs out
-      sessionStorage.removeItem("profileReminderShown");
+      return () => clearTimeout(timer);
     }
+
+    prevLoginState.current = isLoggedIn;
   }, [isLoggedIn]);
 
   if (!show) return null;
