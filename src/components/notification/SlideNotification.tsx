@@ -9,9 +9,13 @@ export default function SlideNotification({ url }: { url: string }) {
   const [show, setShow] = useState(false);
 
   const isLoggedIn = useSelector((state: RootState) => state.user.loggedIn);
+  const isUserProfileComplete = useSelector(
+    (state: RootState) => state.user.me.userProfileComplete
+  );
 
   useEffect(() => {
-    if (isLoggedIn) {
+    // Only show if logged in AND profile is incomplete
+    if (isLoggedIn && !isUserProfileComplete) {
       const alreadyShown = sessionStorage.getItem("profileReminderShown");
 
       if (!alreadyShown) {
@@ -25,10 +29,10 @@ export default function SlideNotification({ url }: { url: string }) {
         return () => clearTimeout(timer);
       }
     } else {
-      // Reset when user logs out
+      // reset if logged out
       sessionStorage.removeItem("profileReminderShown");
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, isUserProfileComplete]);
 
   if (!show) return null;
 
