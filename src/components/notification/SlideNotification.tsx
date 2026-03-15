@@ -12,13 +12,21 @@ export default function SlideNotification({ url }: { url: string }) {
 
   useEffect(() => {
     if (isLoggedIn) {
-      setShow(true);
+      const alreadyShown = sessionStorage.getItem("profileReminderShown");
 
-      const timer = setTimeout(() => {
-        setShow(false);
-      }, 4000);
+      if (!alreadyShown) {
+        setShow(true);
+        sessionStorage.setItem("profileReminderShown", "true");
 
-      return () => clearTimeout(timer);
+        const timer = setTimeout(() => {
+          setShow(false);
+        }, 4000);
+
+        return () => clearTimeout(timer);
+      }
+    } else {
+      // Reset when user logs out
+      sessionStorage.removeItem("profileReminderShown");
     }
   }, [isLoggedIn]);
 
