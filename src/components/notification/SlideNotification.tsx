@@ -19,8 +19,8 @@ export default function SlideNotification({ url }: { url: string }) {
   if (!show) return null;
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] w-[92%] max-w-lg animate-slide-down">
-      <div className="bg-white shadow-2xl border border-gray-200 rounded-2xl px-6 py-4 sm:px-8 sm:py-5 flex items-center justify-between gap-4">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] w-[82%] max-w-lg animate-slide-down">
+      <div className="bg-white shadow-xl border border-gray-200 rounded-2xl px-5 py-3 sm:px-7 sm:py-4 flex items-center justify-between gap-3">
         
         <span className="text-base sm:text-lg text-gray-800 font-medium">
           Please complete your profile to unlock all features.
