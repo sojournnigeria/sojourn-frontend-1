@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { X, ChevronRight, Clock, CheckCircle, ShieldCheck, ShieldBan, BedDouble, Bath, Users } from "lucide-react";
+import {
+  X,
+  ChevronRight,
+  Clock,
+  CheckCircle,
+  ShieldCheck,
+  ShieldBan,
+  BedDouble,
+  Bath,
+  Users,
+} from "lucide-react";
 import DefaultAvatar from "@/components/ui/default-avatar";
 import { numberOfNights } from "@/lib/utils";
 
@@ -42,13 +52,16 @@ export default function ListingDetails({
     bookingCheckInDate && bookingCheckOutDate
       ? numberOfNights(
           new Date(bookingCheckInDate),
-          new Date(bookingCheckOutDate),
+          new Date(bookingCheckOutDate)
         )
       : undefined;
 
   return (
-    <div className="w-full border-l border-gray-200 bg-white flex flex-col h-full shadow-lg animate-slide-in">
-      <div className="flex-1 overflow-y-auto">
+    <div className="w-full border-l border-gray-200 bg-white flex flex-col h-screen md:h-full shadow-lg animate-slide-in">
+
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto overscroll-y-contain">
+
         {/* Property Image */}
         <div className="p-4">
           <div className="relative w-full h-64 bg-gray-200 rounded-lg border-4 border-white shadow-xl overflow-hidden group">
@@ -90,15 +103,17 @@ export default function ListingDetails({
                 </div>
               </div>
             )}
+
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
+
             <Link
               href={`/properties/${propertyId}`}
               target="_blank"
               className="absolute top-3 left-3 px-3 py-1.5 bg-white text-gray-900 text-sm font-medium rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-95 z-10"
             >
-              View Listing
+              View Property
             </Link>
-            {/* Close Button */}
+
             <button
               onClick={onClose}
               className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-white rounded-full transition-all duration-200 active:scale-95 z-20 shadow-md hover:shadow-lg"
@@ -119,64 +134,44 @@ export default function ListingDetails({
           )}
         </div>
 
-        {/* Property Details Card */}
+        {/* Property Details */}
         <div className="p-4 border-b border-gray-200">
           <div className="rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-100 shadow-sm overflow-hidden">
-            {/* Room Info Row */}
             <div className="grid grid-cols-3 divide-x divide-gray-100 p-3">
-              <div className="flex flex-col items-center gap-1.5 px-1">
-                <div className="listing-icon-glow listing-icon-glow--blue">
-                  <BedDouble className="w-4 h-4 text-blue-500" />
-                </div>
-                <p className="text-lg font-bold text-gray-900">{numberOfRooms || "—"}</p>
-                <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Bedrooms</p>
-              </div>
-              <div className="flex flex-col items-center gap-1.5 px-1">
-                <div className="listing-icon-glow listing-icon-glow--purple">
-                  <Bath className="w-4 h-4 text-purple-500" />
-                </div>
-                <p className="text-lg font-bold text-gray-900">{numberOfRooms ? Math.max(1, Math.ceil(numberOfRooms / 2)) : "—"}</p>
-                <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Bathrooms</p>
-              </div>
-              <div className="flex flex-col items-center gap-1.5 px-1">
-                <div className="listing-icon-glow listing-icon-glow--amber">
-                  <Users className="w-4 h-4 text-amber-500" />
-                </div>
-                <p className="text-lg font-bold text-gray-900">{maxNumberOfPeople || "—"}</p>
-                <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Max guests</p>
-              </div>
-            </div>
 
-            {/* Schedule Row */}
-            {(propertyCheckInTime || propertyCheckOutTime) && (
-              <>
-                <div className="h-px bg-gray-100" />
-                <div className="grid grid-cols-2 divide-x divide-gray-100 p-3">
-                  {propertyCheckInTime && (
-                    <div className="flex items-center gap-2 px-1">
-                      <div className="listing-icon-glow listing-icon-glow--emerald">
-                        <Clock className="w-3.5 h-3.5 text-emerald-500" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Check-in</p>
-                        <p className="text-xs font-semibold text-gray-900">{propertyCheckInTime}</p>
-                      </div>
-                    </div>
-                  )}
-                  {propertyCheckOutTime && (
-                    <div className="flex items-center gap-2 px-1">
-                      <div className="listing-icon-glow listing-icon-glow--rose">
-                        <Clock className="w-3.5 h-3.5 text-rose-500" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Check-out</p>
-                        <p className="text-xs font-semibold text-gray-900">{propertyCheckOutTime}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
+              <div className="flex flex-col items-center gap-1.5 px-1">
+                <BedDouble className="w-4 h-4 text-blue-500" />
+                <p className="text-lg font-bold text-gray-900">
+                  {numberOfRooms || "—"}
+                </p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">
+                  Bedrooms
+                </p>
+              </div>
+
+              <div className="flex flex-col items-center gap-1.5 px-1">
+                <Bath className="w-4 h-4 text-purple-500" />
+                <p className="text-lg font-bold text-gray-900">
+                  {numberOfRooms
+                    ? Math.max(1, Math.ceil(numberOfRooms / 2))
+                    : "—"}
+                </p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">
+                  Bathrooms
+                </p>
+              </div>
+
+              <div className="flex flex-col items-center gap-1.5 px-1">
+                <Users className="w-4 h-4 text-amber-500" />
+                <p className="text-lg font-bold text-gray-900">
+                  {maxNumberOfPeople || "—"}
+                </p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">
+                  Max guests
+                </p>
+              </div>
+
+            </div>
           </div>
         </div>
 
@@ -186,6 +181,7 @@ export default function ListingDetails({
             <h4 className="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">
               Amenities
             </h4>
+
             <div className="flex flex-wrap gap-1.5">
               {ammenities.map((item: string, idx: number) => (
                 <span
@@ -206,11 +202,14 @@ export default function ListingDetails({
             <h4 className="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">
               House rules
             </h4>
+
             <div className="space-y-1.5">
               {houseRules.map((rule: string, idx: number) => (
                 <div key={idx} className="flex items-center gap-2">
                   <ShieldBan className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                  <span className="text-xs text-gray-600 capitalize">{rule}</span>
+                  <span className="text-xs text-gray-600 capitalize">
+                    {rule}
+                  </span>
                 </div>
               ))}
             </div>
@@ -220,141 +219,47 @@ export default function ListingDetails({
         {/* Pricing */}
         {price !== undefined && (
           <div className="p-4 border-b border-gray-200">
-            <div className="flex justify-between items-baseline">
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Price per night</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ₦{new Number(price).toLocaleString()}
-                </p>
-              </div>
-              {nights && (
-                <p className="text-sm text-gray-500">
-                  × {nights} {nights === 1 ? "night" : "nights"}
-                </p>
-              )}
-            </div>
+            <p className="text-xs text-gray-500 mb-1">Price per night</p>
+
+            <p className="text-2xl font-bold text-gray-900">
+              ₦{new Number(price).toLocaleString()}
+            </p>
           </div>
         )}
 
-        {/* Payment details (if booking) */}
-        {!!amountPaid && (
-          <div className="p-4 border-b border-gray-200 space-y-3">
-            <h4 className="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">
-              Payment details
-            </h4>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Total</span>
-              <span className="font-semibold">
-                ₦{new Number(amountPaid).toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Price</span>
-              <span className="font-semibold">
-                ₦{new Number(price).toLocaleString()}{" "}
-                <span className="text-xs">/night</span>
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Caution fee</span>
-              <span className="font-semibold">
-                ₦{new Number(cautionFee).toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Duration</span>
-              <span className="font-semibold">{nights} nights</span>
-            </div>
-          </div>
-        )}
-
-        {/* Check-in/out (if booking) */}
-        {bookingCheckInDate && bookingCheckOutDate && (
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex justify-between">
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Check in</p>
-                <p className="text-sm font-medium">{bookingCheckInDate}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Check out</p>
-                <p className="text-sm font-medium">{bookingCheckOutDate}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Host Information */}
+        {/* Host */}
         <div className="p-4 border-b border-gray-200">
           <p className="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">
             Host
           </p>
+
           <div className="flex items-center gap-3">
+
             {hostPhoto ? (
-              <div className="relative">
-                <Image
-                  src={hostPhoto}
-                  alt={hostFullName}
-                  width={48}
-                  height={48}
-                  className="w-12 h-12 rounded-full object-cover shadow-sm ring-2 ring-offset-2 ring-gray-100"
-                />
-                {hostVerified && (
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={3}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </div>
-                )}
-              </div>
+              <Image
+                src={hostPhoto}
+                alt={hostFullName}
+                width={48}
+                height={48}
+                className="w-12 h-12 rounded-full object-cover"
+              />
             ) : (
-              <div className="relative">
-                <DefaultAvatar size="md" />
-                {hostVerified && (
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={3}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </div>
-                )}
-              </div>
+              <DefaultAvatar size="md" />
             )}
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <p className="font-semibold text-sm text-gray-900">
-                  {hostFullName}
-                </p>
-                {hostVerified && (
-                  <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-600 rounded-full">
-                    <ShieldCheck className="w-3 h-3 text-white" />
-                    <span className="text-xs font-medium text-white">
-                      Verified
-                    </span>
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-gray-500 mt-0.5">Property host</p>
+
+            <div>
+              <p className="font-semibold text-sm text-gray-900">
+                {hostFullName}
+              </p>
+
+              {hostVerified && (
+                <div className="flex items-center gap-1 text-emerald-600 text-xs">
+                  <ShieldCheck className="w-3 h-3" />
+                  Verified host
+                </div>
+              )}
             </div>
+
           </div>
         </div>
 
@@ -363,21 +268,21 @@ export default function ListingDetails({
           <Link
             href="/terms-of-use#refund-policy"
             target="_blank"
-            className="block"
+            className="flex items-center justify-between w-full group"
           >
-            <button className="flex items-center justify-between w-full text-left group p-2 -m-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <div>
-                <p className="text-xs text-gray-500 mb-1">
-                  Cancellation policy
-                </p>
-                <p className="text-sm text-gray-700 font-medium">
-                  {bookingCheckInDate ? "Flexible" : "Standard"}
-                </p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-transform group-hover:translate-x-1" />
-            </button>
+            <div>
+              <p className="text-xs text-gray-500 mb-1">
+                Cancellation policy
+              </p>
+              <p className="text-sm text-gray-700 font-medium">
+                {bookingCheckInDate ? "Flexible" : "Standard"}
+              </p>
+            </div>
+
+            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition" />
           </Link>
         </div>
+
       </div>
     </div>
   );
