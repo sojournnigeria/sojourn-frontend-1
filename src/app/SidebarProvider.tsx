@@ -130,7 +130,7 @@ export default function SidebarProvider({
   // Decide padding dynamically:
   // - No py-20 on homepage (small screens)
   // - Keep py-20 on other pages
-  const containerPadding = pathname === "/" 
+  const containerPadding = pathname === "/" || "/hosts/dashboard/properties/create"
     ? "sm:pt-20 py-0" // py-0 on mobile, py-20 from sm upwards
     : "pt-20";        // py-20 everywhere
 
