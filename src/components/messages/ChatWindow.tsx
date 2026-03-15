@@ -96,7 +96,7 @@ export default function ChatWindow({ conversation, isHostView = false }: ChatWin
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="px-6 py-14 sm:py-3 border-b border-gray-200 bg-white shadow-sm">
+      <div className="px-6 pt-14 sm:py-3 border-b border-gray-200 bg-white shadow-sm">
         <div className="flex items-center gap-3">
           {conversation.guestAvatar ? (
             <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm ring-2 ring-offset-2 ring-gray-100">
