@@ -85,8 +85,7 @@ const MobileListMenu = () => {
     <div
       style={{ display: isMenuOpen ? "flex " : "none" }}
       ref={modalRef}
-      className="absolute z-[99999] w-full min-h-[140px]  ease duration-300 shadow-navbar-shadow  bg-paper flex-col sm:absolute sm:top-full sm:right-0 sm:w-[200px]"
-    >
+className="absolute z-[99999] w-full min-h-[140px] ease duration-300 shadow-navbar-shadow bg-paper flex-col sm:absolute sm:top-full sm:right-6 sm:w-[200px]"    >
       <ul className="w-full h-full p-0 m-0 overflow-hidden text-black font-[500] text-[14px] relative">
         <li className="w-full block py-3 px-5 sm:hidden list-none">
           <div
