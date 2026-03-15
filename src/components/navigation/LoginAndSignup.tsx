@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye, EyeOff } from "lucide-react";
 import { LoginSchema, SignupSchema } from "@/schema/users.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -24,6 +25,10 @@ import axios from "axios";
 
 type FormFields = z.infer<typeof LoginSchema>;
 type SingupFormFields = z.infer<typeof SignupSchema>;
+
+const [showPassword, setShowPassword] = useState(false);
+
+
 export default () => {
   const client = useQueryClient();
 
@@ -178,11 +183,18 @@ export default () => {
                   placeholder="Email address"
                 />
                 <input
-                  {...register("password")}
-                  type="password"
-                  className="w-full py-3 px-2 my-3 outline-none border-b border-b-secondary placeholder:text-gray-400 text-[16px]"
-                  placeholder="Password"
-                />
+  {...register("password")}
+  type={showPassword ? "text" : "password"}
+  className="w-full py-3 px-2 my-3 outline-none border-b border-b-secondary placeholder:text-gray-400 text-[16px] pr-10"
+  placeholder="Password"
+/>
+<button
+  type="button"
+  onClick={() => setShowPassword((prev) => !prev)}
+  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
+>
+  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+</button>
                 <p className="my-3 px-2 text-[14px]">
                   Forgot your password?
                   <Link
