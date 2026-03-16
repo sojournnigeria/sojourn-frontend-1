@@ -3060,7 +3060,7 @@ export const PriceCalculator: FC<{
 
 export function PropertyCreatedMessage() {
   return (
-    <div className="w-5/6 min-h-[200px] shadow-lg py-10 flex items-center justify-center flex flex-col max-w-[600px]">
+    <div className="w-5/6 min-h-[200px] shadow-lg py-10 mt-20 flex items-center justify-center flex flex-col max-w-[600px]">
       <CheckCircle color="#34A853" size={100} />
       <p className="text-center font-semibold my-2 md:text-left text-[20px] font-bold">
         Inspection request has been submitted successfully.
