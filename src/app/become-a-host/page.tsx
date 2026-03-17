@@ -657,7 +657,7 @@ const BecomeAHostPage: React.FC = () => {
               {[
                 {
                   q: "How much does it cost to list on Sojourn?",
-                  a: "Sojourn charges a flat monthly subscription starting at ₦20,000/month. There are no per-booking commissions. You keep 100% of what your guests pay.",
+                  a: "Sojourn starts with a ₦0 basic plan, so you can list your property at no upfront cost. There are no per-booking commissions, and you keep 100% of your earnings.",
                 },
                 {
                   q: "How do I get paid when a guest books my property?",
