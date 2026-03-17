@@ -21,7 +21,6 @@ import Link from "next/link";
 import { useGoogleLogin } from "@react-oauth/google";
 import { toast } from "sonner";
 import axios from "axios";
-import { Eye, EyeOff } from "lucide-react";
 
 type FormFields = z.infer<typeof LoginSchema>;
 type SingupFormFields = z.infer<typeof SignupSchema>;
@@ -32,7 +31,6 @@ export default () => {
   const [profile, setProfile] = useState({
     email: "",
   });
-  const [showPassword, setShowPassword] = useState(false);
 
   const loginGoogle = useGoogleLogin({
     onSuccess: (tokenResponse) => {
@@ -179,27 +177,12 @@ export default () => {
                   className="w-full py-3 px-2 my-3 outline-none border-b border-b-secondary placeholder:text-gray-400 text-[16px]"
                   placeholder="Email address"
                 />
-                {/* <input
+                <input
                   {...register("password")}
                   type="password"
                   className="w-full py-3 px-2 my-3 outline-none border-b border-b-secondary placeholder:text-gray-400 text-[16px]"
                   placeholder="Password"
-                /> */}
-                <div className="relative">
-  <input
-    {...register("password")}
-    type={showPassword ? "text" : "password"}
-    className="w-full py-3 px-2 my-3 outline-none border-b border-b-secondary placeholder:text-gray-400 text-[16px]"
-    placeholder="Password"
-  />
-  <button
-    type="button"
-    onClick={() => setShowPassword((prev) => !prev)}
-    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black transition active:scale-90"
-  >
-    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-  </button>
-</div>
+                />
                 <p className="my-3 px-2 text-[14px]">
                   Forgot your password?
                   <Link
@@ -259,7 +242,6 @@ function SingupModal() {
     given_name: "",
     verified_email: false,
   });
-  const [showPassword, setShowPassword] = useState(false);
 
   const signupGoogle = useGoogleLogin({
     onSuccess: (tokenResponse) => {
@@ -431,21 +413,12 @@ function SingupModal() {
                   {errorsSignup.password.message}
                 </span>
               )}
-             <div className="relative">
-  <input
-    {...registerSigup("password")}
-    type={showPassword ? "text" : "password"}
-    className="w-full py-3 px-2 my-3 outline-none border-b border-b-secondary placeholder:text-gray-400 text-[16px]"
-    placeholder="Password"
-  />
-  <button
-    type="button"
-    onClick={() => setShowPassword((prev) => !prev)}
-    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black transition active:scale-90"
-  >
-    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-  </button>
-</div>
+              <input
+                {...registerSigup("password")}
+                type="password"
+                className="w-full py-3 px-2 my-3 outline-none border-b border-b-secondary placeholder:text-gray-400 text-[16px]"
+                placeholder="Password"
+              />
               <button className="border-0 outline-none rounded-full flex items-center justify-center w-full p-4 bg-primary text-white font-bold ease duration-300 hover:bg-red-800">
                 {whenSignupIsPending ? (
                   <Spinner />
