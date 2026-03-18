@@ -38,6 +38,7 @@ import {
   Edit,
   Mail,
   ShieldBan,
+  View,
   XCircle,
 } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -47,6 +48,10 @@ import React from "react";
 import { useState } from "react";
 import { useSelector } from "react-redux";
 const Map = dynamic(() => import("@/components/property/map"), { ssr: false });
+const VirtualTourViewer = dynamic(
+  () => import("@/components/property/virtual-tour-viewer"),
+  { ssr: false }
+);
 
 export default ({
   params: { propertyId },
@@ -72,6 +77,8 @@ export default ({
     contactInformation: false,
     editPrice: false,
   });
+
+  const [showVirtualTour, setShowVirtualTour] = useState(false);
 
   const { data, error, isLoading } = useQuery({
     queryKey: ["single-property-host"],
@@ -156,6 +163,7 @@ export default ({
             title={data.title}
             images={data.photos}
             photos={images}
+            existingPanoramas={data.panoramas ?? []}
           />
         ) : (
           <>
@@ -224,7 +232,30 @@ export default ({
                 );
               })}
             </div>
+            {data?.panoramas?.length > 0 && (
+              <div className="w-full mt-4 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowVirtualTour(true)}
+                  className="px-4 py-2.5 rounded-full bg-black text-white text-sm font-semibold flex items-center gap-2 hover:bg-red-700 transition-colors"
+                >
+                  <View size={16} />
+                  Preview 360° Tour
+                </button>
+                <span className="text-sm text-black/50">
+                  {data.panoramas.length} room{data.panoramas.length > 1 ? "s" : ""} uploaded
+                </span>
+              </div>
+            )}
           </>
+        )}
+
+        {showVirtualTour && data?.panoramas?.length > 0 && (
+          <VirtualTourViewer
+            panoramas={data.panoramas}
+            onClose={() => setShowVirtualTour(false)}
+            isFullscreen
+          />
         )}
         <div className="w-full flex items-center justify-end">
           {editPropertyFormState.editPrice ? (

@@ -8,6 +8,9 @@ import { ChangeEvent, useRef, useState, MouseEvent, FormEvent } from "react";
 import Spinner from "../svgs/Spinner";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import PanoramaUpload, {
+  PanoramaFile,
+} from "@/components/property/panorama-upload";
 
 export default ({
   photos,
@@ -16,14 +19,15 @@ export default ({
   id,
   isInspection = false,
   hostId,
+  existingPanoramas = [],
 }: {
   id: string;
   title: string;
   images: string[];
   hostId: string;
-
   photos: string[];
   isInspection?: boolean;
+  existingPanoramas?: { id: string; label: string; imageUrl: string }[];
 }) => {
   const client = useQueryClient();
 
@@ -63,6 +67,14 @@ export default ({
     images,
     photos,
   }));
+
+  const [panoramas, setPanoramas] = useState<PanoramaFile[]>(
+    existingPanoramas.map((p) => ({
+      id: p.id,
+      label: p.label,
+      previewUrl: p.imageUrl,
+    }))
+  );
 
   const morePhotos = state.files.map((file) => URL.createObjectURL(file));
 
@@ -119,6 +131,17 @@ export default ({
       formData.append("files", element);
     }
     formData.append("photos", JSON.stringify(state.photos));
+    for (let i = 0; i < panoramas.length; i++) {
+      const pano = panoramas[i];
+      if (pano.file) {
+        formData.append("panoramaFiles", pano.file);
+        formData.append("panoramaLabels", pano.label);
+      }
+    }
+    const existingPanoUrls = panoramas
+      .filter((p) => !p.file)
+      .map((p) => ({ id: p.id, label: p.label, imageUrl: p.previewUrl }));
+    formData.append("existingPanoramas", JSON.stringify(existingPanoUrls));
     mutation.mutate(formData);
   };
 
@@ -197,7 +220,12 @@ export default ({
           add photos
         </button>
       </div>
-      <div className="w-full flex items-center justify-end">
+      {/* 360° Virtual Tour Photos */}
+      <div className="w-full mt-6 pt-6 border-t border-t-gray-200">
+        <PanoramaUpload panoramas={panoramas} onChange={setPanoramas} />
+      </div>
+
+      <div className="w-full flex items-center justify-end mt-6">
         <button className="flex items-center justify-center font-semibold outline-none border-0 bg-black text-white py-2 px-4 rounded-md ease duration-300 hover:bg-slate-700">
           {mutation.isPending ? (
             <Spinner size={17} color="white" />
