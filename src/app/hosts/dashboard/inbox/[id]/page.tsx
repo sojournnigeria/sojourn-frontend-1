@@ -1,333 +1,334 @@
 "use client";
 
-import Spinner from "@/components/svgs/Spinner";
-import { getTicketMessages, sendMessage } from "@/http/api";
-import { RootState } from "@/store";
-import { MessageType } from "@/types/messages";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, SendHorizonal, X } from "lucide-react";
-import { ChangeEvent, FormEvent, KeyboardEvent, useState } from "react";
+import { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
-import { toast } from "sonner";
-import Image from "next/image";
+import { RootState } from "@/store";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import hdate from "human-date";
-import Link from "next/link";
-import { numberOfNights } from "@/lib/utils";
+  getMessagesByGuestId,
+  getBookingsByUserId,
+  createTicket,
+  getTicketMessages, // <-- import this
+} from "@/http/api";
+import { Conversation } from "@/types/messages";
+import MessageList from "@/components/messages/MessageList";
+import ChatWindow from "@/components/messages/ChatWindow";
+import ListingDetails from "@/components/messages/ListingDetails";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Search, X, Pencil, ArrowRight } from "lucide-react";
+import Spinner from "@/components/svgs/Spinner";
+import { toast } from "sonner";
 
-export default ({ params: { id } }: { params: { id: string } }) => {
-  const hostId = useSelector((state: RootState) => state.user.me?.host?.id);
+export default function InboxContent() {
+  const userId = useSelector((state: RootState) => state.user.me?.user?.id);
+  const queryClient = useQueryClient();
 
-  const client = useQueryClient();
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["ticket-messages-host"],
-    queryFn: () => getTicketMessages(id),
-    refetchIntervalInBackground: true,
-    refetchInterval: 200,
+  const [selectedConversation, setSelectedConversation] =
+    useState<Conversation | null>(null);
+  const [showListingDetails, setShowListingDetails] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [newChat, setNewChatDetails] = useState({
+    title: "",
+    message: "",
+    hostId: "",
+    bookingId: "",
   });
 
+  // Fetch conversations list
+  const { data: conversationsData, isLoading } = useQuery({
+    queryKey: ["messages-user"],
+    queryFn: () => getMessagesByGuestId(userId),
+    enabled: !!userId,
+  });
+
+  // Fetch full ticket details when a conversation is selected
+  const { data: ticketData, isLoading: ticketLoading } = useQuery({
+    queryKey: ["ticket-details", selectedConversation?.id],
+    queryFn: () => getTicketMessages(selectedConversation!.id),
+    enabled: !!selectedConversation,
+  });
+
+  // Fetch bookings for new chat dialog
+  const { data: bookingsData } = useQuery({
+    queryKey: ["get-bookings"],
+    queryFn: () => getBookingsByUserId(userId),
+    enabled: !!userId,
+  });
+
+  // Create new ticket mutation
   const mutation = useMutation({
-    mutationKey: ["send-message-host"],
-    mutationFn: sendMessage,
-    async onSuccess() {
-      await client.invalidateQueries({
-        queryKey: ["ticket-messages-host"],
-      });
+    mutationFn: createTicket,
+    onSuccess: () => {
+      toast.success("Message sent successfully");
+      queryClient.invalidateQueries({ queryKey: ["messages-user"] });
+      setNewChatDetails({ title: "", message: "", hostId: "", bookingId: "" });
     },
-
-    onError() {
-      toast("Failed to send message", {
-        description: message,
-        action: {
-          label: "Ok",
-          onClick: () => console.log("Ok"),
-        },
-      });
+    onError: () => {
+      toast.error("Failed to send message");
     },
   });
 
-  const [message, setMessage] = useState<string>("");
+  // Transform API data to Conversation format (for the list)
+  const conversations: Conversation[] = (conversationsData || []).map(
+    (item: any) => ({
+      id: item.id,
+      guestName:
+        `${item.hostFirstName || ""} ${item.hostLastName || ""}`.trim(),
+      guestId: item.hostId,
+      guestAvatar: item.hostPhoto,
+      lastMessage: item.title || "",
+      lastMessageTime: item.date ? new Date(item.date) : new Date(),
+      unreadCount: item.unread || 0,
+      propertyName: item.propertyTitle || "",
+      propertyId: item.propertyId,
+      propertyImage: item.propertyPhoto,
+      propertyLocation: item.location,
+      pricePerNight: item.price,
+    }),
+  );
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    mutation.mutate({
-      ticketId: id,
-      hostId,
-      message,
-      senderId: hostId,
-      userId: data.userId,
-    } as MessageType);
-    setMessage("");
-  }
+  const filteredConversations = conversations.filter(
+    (conv) =>
+      conv.guestName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      conv.propertyName.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
-  const hostPhotoUrl = data ? data.userPhoto : "";
-  const userPhoto = hostPhotoUrl;
+  const handleSelectConversation = (conv: Conversation) => {
+    setSelectedConversation(conv);
+    setShowListingDetails(true);
+  };
 
-  const bookingOrListing =
-    data && data.bookingCheckInDate ? "Reservation" : "Listing";
-
-  const photoUrl = data && data.propertyPhoto ? data.propertyPhoto : "";
-  const propertyPhoto = photoUrl;
-
-  const handleEnterKeySubmit = (e: KeyboardEvent) => {
-    if (e.key === "Enter") {
-      mutation.mutate({
-        ticketId: id,
-        hostId,
-        message,
-        senderId: hostId,
-        userId: data.userId,
-      } as MessageType);
-      setMessage("");
+  const handleNewChatChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = e.target;
+    if (name === "bookingId") {
+      const booking = bookingsData?.find((b: any) => b.id === value);
+      setNewChatDetails((prev) => ({
+        ...prev,
+        [name]: value,
+        hostId: booking?.property?.hostId || "",
+      }));
+    } else {
+      setNewChatDetails((prev) => ({ ...prev, [name]: value }));
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="w-full flex items-center justify-center py-10 bg-white px-5 md:px-5 lg:px-20">
-        <Spinner size={17} color="red" />
-      </div>
-    );
-  }
+  const handleCreateTicket = (e: FormEvent) => {
+    e.preventDefault();
+    if (!newChat.title || !newChat.message || !newChat.hostId) {
+      toast.error("Please fill all fields");
+      return;
+    }
+    mutation.mutate({
+      senderId: userId,
+      userId: userId,
+      message: newChat.message,
+      hostId: newChat.hostId,
+      title: newChat.title,
+      bookingId: newChat.bookingId,
+    });
+  };
 
   return (
-    <div className="w-full lg:py-10 bg-white lg:px-5 lg:px-20 h-[88vh]">
-      <div className="w-full flex-col h-full relative">
-        <div className="w-full flex flex-col items-center">
-          <div className="w-full shadow-md py-2 px-3 font-semibold capitalize flex items-center space-x-3 md:space-x-0 justify-between">
-            <div className="w-1/2 md:w-1/4 flex items-center space-x-2">
-              <div className="cursor-pointer flex w-[30px] h-[30px] items-center bg-gray-200 rounded-full overflow-hidden relative flex items-center justify-center">
-                {userPhoto ? (
-                  <Image
-                    src={userPhoto}
-                    alt="person_placeholder"
-                    fill
-                    priority
-                  />
-                ) : (
-                  <Image
-                    src="/assets/icons/person-placeholder.png"
-                    alt="person_placeholder"
-                    width={23}
-                    height={23}
-                  />
+    <div className="flex flex-col h-[calc(100vh-70px)] bg-gray-50">
+      <div className="flex-1 flex overflow-hidden">
+        {/* Inbox and Chat Section */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Inbox Header */}
+          <div className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-2xl font-bold text-gray-900">Inbox</h1>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Search Bar */}
+              <div className="relative w-64">
+                <input
+                  type="text"
+                  placeholder="Search by name or property"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg transition-all duration-200 text-sm ${
+                    isSearchFocused
+                      ? "border-red-500 ring-2 ring-red-500/20 shadow-sm"
+                      : "border-gray-300 hover:border-gray-400"
+                  } focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500`}
+                />
+                <Search
+                  className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors ${
+                    isSearchFocused ? "text-red-500" : "text-gray-400"
+                  }`}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
                 )}
               </div>
-              <div className="flex flex-col">
-                <span className="font-semibold">{data.guestFullName}</span>
-                <div className=" md:block hidden text-[10px] lowercase font-normal">
-                  {hdate.relativeTime(data.date)}
-                </div>
-              </div>
-            </div>
-            <Dialog>
-              <DialogTrigger>
-                <div className="bg-primary text-white font-semibold py-2 px-4 rounded-full text-xs">
-                  Show {bookingOrListing}
-                </div>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogClose className="w-full flex justify-end">
-                  <X size={20} />
-                </DialogClose>
-                <div className="w-full flex items-center justify-between  p-2 border-b border-b-gray-200">
-                  <h5 className="font-semibold text-lg">{bookingOrListing}</h5>
-                </div>
-                <Link
-                  href={`/properties/${data.propertyId}`}
-                  target="_blank"
-                  className="font-semibold text-md block"
-                >
-                  {propertyPhoto ? (
-                    <div className="w-full rounded-md oveflow-hidden relative h-[200px]">
-                      <div className="absolute bg-black opacity-40 w-full h-full top-0 left-0 z-10"></div>
-                      <div className="absolute px-3 py-2  top-4 left-4 z-50  isolate rounded-full bg-gray-200 shadow-md font-bold  text-xs">
-                        View Listing
-                      </div>
-                      <Image
-                        src={propertyPhoto}
-                        alt="property_photo"
-                        fill
-                        priority
+
+              {/* New Message Button */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button className="w-10 h-10 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg flex items-center justify-center transition-all duration-200 flex-shrink-0 shadow-sm hover:shadow-md hover:scale-105 active:scale-95">
+                    <Pencil size={18} />
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <h4 className="text-lg font-semibold mb-4">New Chat</h4>
+                  <form onSubmit={handleCreateTicket} className="space-y-4">
+                    <div>
+                      <label
+                        htmlFor="title"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        What do you want to talk about?
+                      </label>
+                      <Input
+                        id="title"
+                        name="title"
+                        value={newChat.title}
+                        onChange={handleNewChatChange}
+                        placeholder="e.g. Question about booking"
+                        required
                       />
                     </div>
-                  ) : null}
-                </Link>
-                {!data.bookingCheckInDate ? (
-                  <div className="w-full flex flex-col  p-2 border-b border-b-gray-200 space-y-2">
-                    <h5 className="font-semibold text-md"> Staying at</h5>
-                    <div className="capitalize">{data.propertyTitle}</div>
-                  </div>
-                ) : null}
-                <div className="w-full flex flex-col  p-2 border-b border-b-gray-200 space-y-2">
-                  <h5 className="font-semibold text-md">Location</h5>
-                  <div>{data.location}</div>
-                </div>
-                {!data.bookingCheckInDate ? (
-                  <div className="w-full flex flex-col  p-2 border-b border-b-gray-200 space-y-2">
-                    <h5 className="font-semibold text-md">Price per night</h5>
-                    <div>₦{new Number(data.price).toLocaleString()}</div>
-                  </div>
-                ) : null}
-
-                {data.amountPaid ? (
-                  <div className="w-full flex flex-col  p-2  border-b border-b-gray-200 space-y-2">
-                    <h5 className="font-semibold text-md">Payment details</h5>
-                    <div className="w-full flex justify-between">
-                      <h5>Total</h5>
-                      <div className="font-inter">
-                        ₦{new Number(data.amountPaid).toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="w-full flex justify-between">
-                      <h5>Price</h5>
-                      <div className="font-inter">
-                        ₦{new Number(data.price).toLocaleString()}
-                        <span className="text-[11px]">/night</span>
-                      </div>
-                    </div>
-                    <div className="w-full flex justify-between">
-                      <h5>Caution fee</h5>
-                      <div className="font-inter">
-                        ₦{new Number(data.cautionFee).toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="w-full flex justify-between">
-                      <h5>Duration</h5>
-                      <div>
-                        {numberOfNights(
-                          new Date(data.bookingCheckInDate),
-                          new Date(data.bookingCheckOutDate)
-                        )}{" "}
-                        nights
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-
-                {data.bookingCheckInDate ? (
-                  <div className="w-full flex justify-between p-2  border-b border-b-gray-200">
                     <div>
-                      <h5 className="font-semibold text-md">Check in</h5>
-                      <div>{data.bookingCheckInDate}</div>
+                      <label
+                        htmlFor="bookingId"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Select booking (optional)
+                      </label>
+                      <select
+                        id="bookingId"
+                        name="bookingId"
+                        value={newChat.bookingId}
+                        onChange={handleNewChatChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                      >
+                        <option value="">-- No booking --</option>
+                        {bookingsData?.map((booking: any) => (
+                          <option key={booking.id} value={booking.id}>
+                            {booking.propertyTitle}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
-                      <h5 className="font-semibold text-md">Check out</h5>
-                      <div>{data.bookingCheckOutDate}</div>
+                      <label
+                        htmlFor="message"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Message
+                      </label>
+                      <textarea
+                        id="message"
+                        name="message"
+                        value={newChat.message}
+                        onChange={handleNewChatChange}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                        placeholder="Type your message..."
+                        required
+                      />
                     </div>
-                  </div>
-                ) : null}
-                <div className="w-full flex flex-col  border-b border-b-gray-200">
-                  <Link
-                    href="/terms-of-use#refund-policy"
-                    target="_blank"
-                    className="font-semibold text-md block p-2"
-                  >
-                    <div className="w-full flex items-center justify-between h-full">
-                      <span>Cancellation policy</span>
-                      <ChevronRight size={16} />
-                    </div>
-                  </Link>
-                </div>
-              </DialogContent>
-            </Dialog>
+                    <button
+                      type="submit"
+                      disabled={mutation.isPending}
+                      className="w-full py-2 px-4 bg-black text-white rounded-md hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {mutation.isPending ? (
+                        <Spinner color="white" size={20} />
+                      ) : (
+                        <>
+                          <span>Send message</span> <ArrowRight size={16} />
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
-          <div className="w-5/6 p-2 bg-paper rounded-md mt-1">
-            <p className="text-xs font-semibold text-black text-center">
-              {data.title}
-            </p>
-          </div>
-        </div>
-        <div className="w-full flex flex-col space-y-2 overflow-y-scroll h-[calc(100%-125px)] md:h-[calc(88vh-70px)] lg:h-[calc(100%-70px)] px-5 py-20">
-          {data.messages.map(
-            (
-              m: {
-                host: boolean;
-                message: string;
-                date: string;
-                time: string;
-              },
-              idx: number
-            ) => {
-              return (
-                <div key={idx}>
-                  {m.host && (
-                    <div className="w-full flex items-center justify-end">
-                      <div className="min-w-[100px] max-w-[300px] md:max-w-[500px]  py-2 px-4 flex-col bg-[#3F3F3F] space-y-1 rounded-md">
-                        <span className="text-[#F7F7F7] font-bold">You</span>
-                        <p className="text-[14px] text-[#F7F7F7] font-semibold">
-                          {m.message}
-                        </p>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-inter text-[#F7F7F7] text-[10px]">
-                            {m.date}
-                          </span>
-                          <span className="font-inter  text-[#F7F7F7] text-[10px]">
-                            {m.time}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {!m.host && (
-                    <div className="w-full flex items-center justify-start">
-                      <div className="min-w-[100px] max-w-[300px] md:max-w-[500px]  py-2 px-4 flex-col bg-[#F7F7F7] space-y-1 rounded-md">
-                        <span className="text-[#3F3F3F] font-bold">
-                          {data.guestFullName}
-                        </span>
-                        <p className="text-[14px] font-semibold text-[#3F3F3F]">
-                          {m.message}
-                        </p>
-                        <div className="w-full flex items-center space-x-2">
-                          <span className="font-inter text-[10px] text-[#3F3F3F]">
-                            {m.date}
-                          </span>
-                          <span className="font-inter text-[10px] text-[#3F3F3F]">
-                            {m.time}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+
+          {/* Main Inbox Area */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Conversation List */}
+            <div className="w-80 border-r border-gray-200 bg-white flex flex-col">
+              {isLoading ? (
+                <div className="p-4 space-y-4">
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
                 </div>
-              );
-            }
-          )}
-        </div>
-        <form
-          onSubmit={onSubmit}
-          className="w-full flex items-center bottom-[71px] p-2 fixed md:bottom-[-40px] md:absolute bg-white rounded-md border border-gray-400"
-        >
-          <textarea
-            onKeyUp={handleEnterKeySubmit}
-            value={message}
-            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
-              setMessage((e as ChangeEvent<HTMLTextAreaElement>).target.value);
-            }}
-            className="w-[85%] md:w-[92%] p-3 h-[45px] rounded-l-full font-semibold resize-none border-0 bg-transparent outline-none text-[16px]"
-            placeholder="type your message here..."
-          />
-          <button className="w-[15%] md:w-[8%] p-3 h-[45px] outline-none rounded-r-full  flex items-center justify-center">
-            {mutation.isPending ? (
-              <Spinner color="white" size={28} />
-            ) : (
-              <span>
-                <SendHorizonal
-                  size={28}
-                  className="stroke-primary"
-                  strokeWidth={3}
+              ) : (
+                <MessageList
+                  conversations={filteredConversations}
+                  selectedConversationId={selectedConversation?.id}
+                  onSelectConversation={handleSelectConversation}
                 />
-              </span>
+              )}
+            </div>
+
+            {/* Chat Window */}
+            <div className="flex-1 flex flex-col">
+              {selectedConversation ? (
+                <ChatWindow conversation={selectedConversation} />
+              ) : (
+                <div className="flex-1 flex items-center justify-center bg-gray-50">
+                  <div className="text-center animate-fade-in">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-inner">
+                      <svg
+                        className="w-8 h-8 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Select a conversation
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Choose a conversation from the list to start messaging
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Listing Details Sidebar */}
+        {selectedConversation && showListingDetails && (
+          <>
+            {ticketLoading ? (
+              <div className="w-80 border-l border-gray-200 bg-white flex items-center justify-center">
+                <Spinner color="red" size={30} />
+              </div>
+            ) : (
+              <ListingDetails
+                ticketData={ticketData}
+                onClose={() => setShowListingDetails(false)}
+              />
             )}
-          </button>
-        </form>
+          </>
+        )}
       </div>
     </div>
   );
-};
+}
