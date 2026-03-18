@@ -327,7 +327,7 @@ export default ({
       } `}
     >
       <div className="w-full flex flex-col h-full mt-2 justify-between">
-        <div className="w-full flex items-center justify-between">
+        <div className="w-full flex items-center justify-between mb-3">
           {loading ? (
             <Spinner color="red" size={20} />
           ) : (
