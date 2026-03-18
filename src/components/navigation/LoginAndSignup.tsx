@@ -818,7 +818,7 @@ export default () => {
               <Spinner size={35} color="red" />
             </div>
           ) : (
-            <div className="px-6 pt-6">
+            <div className="px-6 pt-8">
               <DialogHeader>
                 <DialogTitle className="text-2xl text-center">
                   Welcome to <span className="text-primary">Sojourn</span>
@@ -827,7 +827,7 @@ export default () => {
 
               <form
                 autoComplete="off"
-                className="w-full min-h-[280px] space-y-4 pb-8"
+                className="w-full min-h-[280px] space-y-4 pb-8 mt-5"
                 onSubmit={handleSubmit(guestLogin)}
               >
                 <input
