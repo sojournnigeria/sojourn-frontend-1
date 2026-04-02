@@ -71,6 +71,7 @@ object-src 'none': Block embedding of objects like Flash or PDFs.
           "https://kwatsltiwynjmybhooal.supabase.co/storage/v1/object/public/sojourn_dev/:path*", // Proxy to Backend
         // destination: "https://sojourn-backend-api.onrender.com/api/v1/:path*",
       },
+      {}
     ];
   },
 
